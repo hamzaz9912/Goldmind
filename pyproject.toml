@@ -1,0 +1,18 @@
+[project]
+name = "repl-nix-workspace"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.13.5",
+    "joblib>=1.5.2",
+    "numpy>=2.2.6",
+    "pandas>=2.3.2",
+    "pandas-ta>=0.4.71b0",
+    "plotly>=6.3.0",
+    "requests>=2.32.5",
+    "scikit-learn>=1.7.2",
+    "streamlit>=1.49.1",
+    "trafilatura>=2.0.0",
+    "yfinance>=0.2.66",
+]

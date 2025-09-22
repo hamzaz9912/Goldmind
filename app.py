@@ -375,7 +375,7 @@ with col2:
         if market_type == "Gold":
             # Display DXY chart
             st.write("**💵 Dollar Index (DXY)**")
-            if fund_data1 is not None and not fund_data1.empty:
+            if fund_data1 is not None and hasattr(fund_data1, 'empty') and not fund_data1.empty:
                 dxy_fig = create_line_chart(fund_data1, "DXY", "Dollar Index")
                 st.plotly_chart(dxy_fig, use_container_width=True)
             else:
@@ -411,33 +411,36 @@ with col2:
 # Technical indicators panel
 st.subheader("📊 Technical Analysis")
 
-if 'df_with_indicators' in locals() and df_with_indicators is not None:
-    col1, col2, col3, col4 = st.columns(4)
-    
-    latest = df_with_indicators.iloc[-1]
-    
-    with col1:
-        st.metric(
-            "RSI(14)", 
-            f"{latest.get('RSI_14', 0):.2f}",
-            delta=None
-        )
+try:
+    if 'df_with_indicators' in locals() and df_with_indicators is not None and not df_with_indicators.empty:
+        col1, col2, col3, col4 = st.columns(4)
         
-    with col2:
-        ema20 = latest.get('EMA_20', 0)
-        ema50 = latest.get('EMA_50', 0)
-        trend = "🟢 Bullish" if ema20 > ema50 else "🔴 Bearish"
-        st.metric("EMA Trend", trend)
+        latest = df_with_indicators.iloc[-1]
         
-    with col3:
-        macd = latest.get('MACD_12_26_9', 0)
-        macd_signal = latest.get('MACDs_12_26_9', 0)
-        macd_trend = "🟢 Bullish" if macd > macd_signal else "🔴 Bearish"
-        st.metric("MACD", macd_trend)
-        
-    with col4:
-        atr = latest.get('ATR_14', 0)
-        st.metric("ATR(14)", f"{atr:.4f}")
+        with col1:
+            st.metric(
+                "RSI(14)", 
+                f"{latest.get('RSI_14', 0):.2f}",
+                delta=None
+            )
+            
+        with col2:
+            ema20 = latest.get('EMA_20', 0)
+            ema50 = latest.get('EMA_50', 0)
+            trend = "🟢 Bullish" if ema20 > ema50 else "🔴 Bearish"
+            st.metric("EMA Trend", trend)
+            
+        with col3:
+            macd = latest.get('MACD_12_26_9', 0)
+            macd_signal = latest.get('MACDs_12_26_9', 0)
+            macd_trend = "🟢 Bullish" if macd > macd_signal else "🔴 Bearish"
+            st.metric("MACD", macd_trend)
+            
+        with col4:
+            atr = latest.get('ATR_14', 0)
+            st.metric("ATR(14)", f"{atr:.4f}")
+except Exception as e:
+    st.error(f"Error displaying technical indicators: {str(e)}")
 
 # Footer
 st.markdown("---")
@@ -454,6 +457,3 @@ if auto_refresh:
         remaining_time = refresh_interval - time_since_refresh
         if remaining_time > 0:
             st.info(f"⏱️ Next refresh in {int(remaining_time)} seconds")
-    
-    # Create subplots
-    fig = make_subplots(

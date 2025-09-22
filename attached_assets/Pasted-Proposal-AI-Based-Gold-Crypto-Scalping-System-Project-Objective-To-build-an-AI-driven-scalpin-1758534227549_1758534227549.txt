@@ -1,0 +1,194 @@
+Proposal: AI-Based Gold & Crypto Scalping System
+🎯 Project Objective
+
+To build an AI-driven scalping dashboard that provides high-confidence, real-time Buy/Sell signals on Gold and Top 20 Cryptocurrencies using technical indicators, AutoML models, and fundamental data sources — optimized for fast-paced traders and scalpers.
+
+✅ Key Features Overview
+Feature	Description
+Markets Supported	Gold (XAUUSD) + Top 20 Cryptocurrencies (BTC, ETH, SOL, etc.)
+Timeframes	5m, 10m, 15m, 30m, 1h, 1d
+Signal Generation	AutoML/LSTM Model per asset, high-probability directional predictions
+SL/TP Calculation	ATR-based Stop Loss and 2×ATR Take Profit (1:2 Risk-Reward Ratio)
+Technical Indicators	EMA20, EMA50, RSI(14), MACD, VWAP, ATR
+Fundamentals	DXY chart (Gold), BTC Dominance (Crypto), News Feeds
+Auto Refresh	Automatically updates based on timeframe – only after candle closes
+Streamlit Dashboard	User-friendly, live chart with overlays, signal panel, and news integration
+🧠 System Workflow (How It Works End-to-End)
+1️⃣ User Input Panel (Sidebar)
+
+Market Type: Gold or Crypto
+
+Asset Selector: XAUUSD for Gold, or select from Top 20 coins for Crypto
+
+Timeframe Selector: 5m to 1d
+
+Auto-Refresh: Automatically refreshes dashboard after each complete candle
+
+2️⃣ Data Fetching
+
+Gold Price Data: Fetched from Yahoo Finance (XAUUSD=X)
+
+Crypto Data: Fetched from Yahoo Finance (e.g. BTC-USD, ETH-USD)
+
+Dollar Index (DXY): For inverse correlation with Gold
+
+News Scraping:
+
+Gold: ForexFactory (high-impact events)
+
+Crypto: CryptoNews / CoinDesk headlines
+
+🔒 Only fully completed candles are used (prevents repainting)
+
+3️⃣ Technical Indicators (Model Features)
+
+Trend Indicators: EMA20, EMA50
+
+Volatility/SL: ATR(14)
+
+Momentum: MACD
+
+Volume: VWAP (for crypto)
+
+Overbought/Oversold: RSI(14)
+
+📊 Indicators are both plotted and used as input features for the ML model.
+
+4️⃣ Machine Learning (AutoML / LSTM Inference)
+
+Each asset has its own pre-trained model stored as: /models/{asset}.pkl
+
+Prediction made on next candle direction
+
+1 = Bullish (BUY), 0 = Bearish (SELL)
+
+Confidence threshold:
+
+70% Bullish → BUY Signal
+
+70% Bearish → SELL Signal
+
+Otherwise → NO TRADE
+
+5️⃣ Signal Calculation
+
+Entry: Last Close
+
+Stop Loss: ±1×ATR from Entry (below for Buy, above for Sell)
+
+Take Profit: ±2×ATR from Entry (target 1:2 RR)
+
+Displayed clearly on dashboard
+
+6️⃣ Chart Display
+
+Plotly Candlestick Chart with interactive zoom, hover, and pan
+
+Overlay Indicators: EMA20, EMA50, RSI, MACD, VWAP
+
+Clean and professional look for visual confirmation
+
+7️⃣ Fundamentals Panel
+
+Gold
+
+Dollar Index (DXY) Line Chart
+
+Top 5 High-Impact Economic Events from ForexFactory
+
+Crypto
+
+(Optional) BTC Dominance Chart
+
+Top 5 Latest Crypto News Headlines
+
+8️⃣ Auto-Refresh Logic
+
+Refresh is dynamically set based on selected timeframe:
+
+5m → refresh every 5 minutes
+
+15m → refresh every 15 minutes
+
+Refreshes only after candle is complete to ensure accuracy
+
+9️⃣ User Dashboard Layout
+Section	Description
+Sidebar Panel	Asset selection, timeframe selector, and auto-refresh note
+Main Panel	Candlestick chart with overlays
+Signal Box	Clear Buy/Sell/No Trade signal with entry, SL, TP, and confidence level
+Fundamentals	DXY chart + Forex news (Gold) OR BTC dominance + crypto news (Crypto)
+
+🧭 Designed for clarity and speed – critical for scalpers.
+
+📁 Project Structure
+xau_crypto_scalping/
+│
+├── app.py                  # Main Streamlit App
+├── data_fetch.py           # Fetch candles + fundamentals
+├── indicators.py           # Technical indicator calculations
+├── model_train.py          # Train AutoML/LSTM models
+├── model_inference.py      # Load + predict
+├── backtest.py             # (Optional) Simulate strategy over past data
+├── utils.py                # Helper functions
+├── models/                 # Saved trained models
+├── requirements.txt
+└── README.md
+
+⚙️ Technologies Used
+
+Streamlit: Frontend dashboard
+
+FLAML / PyCaret / Optuna: AutoML backend
+
+PyTorch (Optional): For LSTM/GRU-based models
+
+pandas_ta: Technical indicators
+
+yfinance + BeautifulSoup: Data fetching
+
+Plotly: Interactive charts
+
+MLflow: (Optional) Model versioning & metrics tracking
+
+🚀 Key Highlights
+
+✅ Live Signals with Confidence Score
+✅ Clear Entry, SL, TP Guidance
+✅ No Repainting – only confirmed candle data used
+✅ Fundamental + Technical Blend
+✅ Scalping Friendly (5m–1h timeframes)
+✅ Supports Top 20 Cryptos + Gold
+✅ Modular, Maintainable Codebase
+✅ AutoML + LSTM Flexibility
+
+📈 Optional Next Steps
+
+Add Backtesting Module to simulate SL/TP hit ratio and win rate
+
+Integrate with Binance API or MT5 Bridge for live trade execution
+
+Add a Model Retraining Panel (weekly or monthly schedule)
+
+Enable User Alerts via Email / Telegram on new signal
+
+Add Confidence Slider to manually adjust signal strictness
+
+📦 Deliverables
+
+✅ Ready-to-run Streamlit App (app.py)
+
+✅ Model Training Script (model_train.py)
+
+✅ Real-Time Dashboard with Signals
+
+✅ Documentation + Setup Instructions
+
+✅ Modular, Extensible Codebase
+
+📌 Visual Mockup
+
+Would you like me to generate a visual mockup (image) showing the dashboard layout, sections, and signal panel as described?
+It can make this proposal even easier to present to a client or developer.
+
+Let me know if you want the dashboard mockup, or if you'd like help setting up model retraining / backtesting / Binance integration.

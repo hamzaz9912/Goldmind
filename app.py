@@ -105,13 +105,14 @@ auto_refresh = st.sidebar.checkbox(
 if auto_refresh != st.session_state.auto_refresh:
     st.session_state.auto_refresh = auto_refresh
 
-# Display refresh info
+# Display refresh info  
+refresh_interval = timeframes[timeframe] * 60  # Convert to seconds
+time_since_refresh = (datetime.now() - st.session_state.last_refresh).total_seconds()
+
 if auto_refresh:
     st.sidebar.info(f"🔄 Auto-refresh every {timeframe}")
-    refresh_interval = timeframes[timeframe] * 60  # Convert to seconds
     
     # Check if it's time to refresh
-    time_since_refresh = (datetime.now() - st.session_state.last_refresh).total_seconds()
     if time_since_refresh >= refresh_interval:
         st.session_state.last_refresh = datetime.now()
         st.rerun()
@@ -121,146 +122,7 @@ if st.sidebar.button("🔄 Manual Refresh"):
     st.session_state.last_refresh = datetime.now()
     st.rerun()
 
-# Initialize data fetcher and other components
-@st.cache_data(ttl=300)  # Cache for 5 minutes
-def fetch_market_data(asset, timeframe, periods=200):
-    fetcher = DataFetcher()
-    return fetcher.get_ohlcv_data(asset, timeframe, periods)
-
-@st.cache_data(ttl=300)
-def calculate_indicators(df):
-    indicators = TechnicalIndicators()
-    return indicators.calculate_all_indicators(df)
-
-@st.cache_data(ttl=300)
-def get_fundamentals_data(market_type):
-    fetcher = DataFetcher()
-    if market_type == "Gold":
-        return fetcher.get_dxy_data(), fetcher.get_forex_news()
-    else:
-        return fetcher.get_btc_dominance(), fetcher.get_crypto_news()
-
-# Main dashboard layout
-col1, col2 = st.columns([3, 1])
-
-with col1:
-    st.subheader(f"📊 {asset_display} - {timeframe}")
-    
-    # Fetch and process data
-    try:
-        with st.spinner("Fetching market data..."):
-            df = fetch_market_data(asset, timeframe)
-            
-        if df is not None and not df.empty:
-            # Calculate technical indicators
-            df_with_indicators = calculate_indicators(df)
-            
-            # Create the candlestick chart
-            fig = create_candlestick_chart(df_with_indicators, asset_display)
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Generate ML signal
-            model_inference = ModelInference()
-            signal_data = model_inference.generate_signal(df_with_indicators, asset)
-            
-            # Display signal information
-            display_signal_panel(signal_data, df_with_indicators.iloc[-1])
-            
-        else:
-            st.error("❌ Unable to fetch market data. Please try again.")
-            
-    except Exception as e:
-        st.error(f"❌ Error loading data: {str(e)}")
-
-with col2:
-    st.subheader("📈 Fundamentals")
-    
-    try:
-        fund_data1, fund_data2 = get_fundamentals_data(market_type)
-        
-        if market_type == "Gold":
-            # Display DXY chart
-            st.write("**💵 Dollar Index (DXY)**")
-            if fund_data1 is not None and not fund_data1.empty:
-                dxy_fig = create_line_chart(fund_data1, "DXY", "Dollar Index")
-                st.plotly_chart(dxy_fig, use_container_width=True)
-            else:
-                st.info("DXY data unavailable")
-                
-            # Display forex news
-            st.write("**📰 Economic Events**")
-            if fund_data2:
-                for i, news in enumerate(fund_data2[:5]):
-                    st.write(f"• {news}")
-            else:
-                st.info("No recent economic events")
-                
-        else:
-            # Display BTC dominance
-            st.write("**₿ BTC Dominance**")
-            if fund_data1 is not None:
-                st.metric("BTC Dominance", f"{fund_data1:.2f}%")
-            else:
-                st.info("BTC dominance unavailable")
-                
-            # Display crypto news
-            st.write("**📰 Crypto News**")
-            if fund_data2:
-                for i, news in enumerate(fund_data2[:5]):
-                    st.write(f"• {news}")
-            else:
-                st.info("No recent crypto news")
-                
-    except Exception as e:
-        st.error(f"Error loading fundamentals: {str(e)}")
-
-# Technical indicators panel
-st.subheader("📊 Technical Analysis")
-
-if 'df_with_indicators' in locals() and df_with_indicators is not None:
-    col1, col2, col3, col4 = st.columns(4)
-    
-    latest = df_with_indicators.iloc[-1]
-    
-    with col1:
-        st.metric(
-            "RSI(14)", 
-            f"{latest.get('RSI_14', 0):.2f}",
-            delta=None
-        )
-        
-    with col2:
-        ema20 = latest.get('EMA_20', 0)
-        ema50 = latest.get('EMA_50', 0)
-        trend = "🟢 Bullish" if ema20 > ema50 else "🔴 Bearish"
-        st.metric("EMA Trend", trend)
-        
-    with col3:
-        macd = latest.get('MACD_12_26_9', 0)
-        macd_signal = latest.get('MACDs_12_26_9', 0)
-        macd_trend = "🟢 Bullish" if macd > macd_signal else "🔴 Bearish"
-        st.metric("MACD", macd_trend)
-        
-    with col4:
-        atr = latest.get('ATR_14', 0)
-        st.metric("ATR(14)", f"{atr:.4f}")
-
-# Footer
-st.markdown("---")
-st.markdown(
-    "💡 **Disclaimer**: This is for educational purposes only. "
-    "Always do your own research before making trading decisions."
-)
-
-# Auto-refresh mechanism
-if auto_refresh:
-    time.sleep(1)  # Small delay to prevent excessive CPU usage
-    placeholder = st.empty()
-    with placeholder.container():
-        remaining_time = refresh_interval - time_since_refresh
-        if remaining_time > 0:
-            st.info(f"⏱️ Next refresh in {int(remaining_time)} seconds")
-
+# Helper functions
 def create_candlestick_chart(df, title):
     """Create an interactive candlestick chart with technical indicators"""
     
@@ -452,3 +314,146 @@ def display_signal_panel(signal_data, latest_candle):
             
     else:
         st.info("⏳ Generating signal...")
+
+# Initialize data fetcher and other components
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def fetch_market_data(asset, timeframe, periods=200):
+    fetcher = DataFetcher()
+    return fetcher.get_ohlcv_data(asset, timeframe, periods)
+
+@st.cache_data(ttl=300)
+def calculate_indicators(df):
+    indicators = TechnicalIndicators()
+    return indicators.calculate_all_indicators(df)
+
+@st.cache_data(ttl=300)
+def get_fundamentals_data(market_type):
+    fetcher = DataFetcher()
+    if market_type == "Gold":
+        return fetcher.get_dxy_data(), fetcher.get_forex_news()
+    else:
+        return fetcher.get_btc_dominance(), fetcher.get_crypto_news()
+
+# Main dashboard layout
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    st.subheader(f"📊 {asset_display} - {timeframe}")
+    
+    # Fetch and process data
+    try:
+        with st.spinner("Fetching market data..."):
+            df = fetch_market_data(asset, timeframe)
+            
+        if df is not None and not df.empty:
+            # Calculate technical indicators
+            df_with_indicators = calculate_indicators(df)
+            
+            # Create the candlestick chart
+            fig = create_candlestick_chart(df_with_indicators, asset_display)
+            st.plotly_chart(fig, use_container_width=True)
+            
+            # Generate ML signal
+            model_inference = ModelInference()
+            signal_data = model_inference.generate_signal(df_with_indicators, asset)
+            
+            # Display signal information
+            display_signal_panel(signal_data, df_with_indicators.iloc[-1])
+            
+        else:
+            st.error("❌ Unable to fetch market data. Please try again.")
+            
+    except Exception as e:
+        st.error(f"❌ Error loading data: {str(e)}")
+
+with col2:
+    st.subheader("📈 Fundamentals")
+    
+    try:
+        fund_data1, fund_data2 = get_fundamentals_data(market_type)
+        
+        if market_type == "Gold":
+            # Display DXY chart
+            st.write("**💵 Dollar Index (DXY)**")
+            if fund_data1 is not None and not fund_data1.empty:
+                dxy_fig = create_line_chart(fund_data1, "DXY", "Dollar Index")
+                st.plotly_chart(dxy_fig, use_container_width=True)
+            else:
+                st.info("DXY data unavailable")
+                
+            # Display forex news
+            st.write("**📰 Economic Events**")
+            if fund_data2:
+                for i, news in enumerate(fund_data2[:5]):
+                    st.write(f"• {news}")
+            else:
+                st.info("No recent economic events")
+                
+        else:
+            # Display BTC dominance
+            st.write("**₿ BTC Dominance**")
+            if fund_data1 is not None:
+                st.metric("BTC Dominance", f"{fund_data1:.2f}%")
+            else:
+                st.info("BTC dominance unavailable")
+                
+            # Display crypto news
+            st.write("**📰 Crypto News**")
+            if fund_data2:
+                for i, news in enumerate(fund_data2[:5]):
+                    st.write(f"• {news}")
+            else:
+                st.info("No recent crypto news")
+                
+    except Exception as e:
+        st.error(f"Error loading fundamentals: {str(e)}")
+
+# Technical indicators panel
+st.subheader("📊 Technical Analysis")
+
+if 'df_with_indicators' in locals() and df_with_indicators is not None:
+    col1, col2, col3, col4 = st.columns(4)
+    
+    latest = df_with_indicators.iloc[-1]
+    
+    with col1:
+        st.metric(
+            "RSI(14)", 
+            f"{latest.get('RSI_14', 0):.2f}",
+            delta=None
+        )
+        
+    with col2:
+        ema20 = latest.get('EMA_20', 0)
+        ema50 = latest.get('EMA_50', 0)
+        trend = "🟢 Bullish" if ema20 > ema50 else "🔴 Bearish"
+        st.metric("EMA Trend", trend)
+        
+    with col3:
+        macd = latest.get('MACD_12_26_9', 0)
+        macd_signal = latest.get('MACDs_12_26_9', 0)
+        macd_trend = "🟢 Bullish" if macd > macd_signal else "🔴 Bearish"
+        st.metric("MACD", macd_trend)
+        
+    with col4:
+        atr = latest.get('ATR_14', 0)
+        st.metric("ATR(14)", f"{atr:.4f}")
+
+# Footer
+st.markdown("---")
+st.markdown(
+    "💡 **Disclaimer**: This is for educational purposes only. "
+    "Always do your own research before making trading decisions."
+)
+
+# Auto-refresh mechanism
+if auto_refresh:
+    time.sleep(1)  # Small delay to prevent excessive CPU usage
+    placeholder = st.empty()
+    with placeholder.container():
+        remaining_time = refresh_interval - time_since_refresh
+        if remaining_time > 0:
+            st.info(f"⏱️ Next refresh in {int(remaining_time)} seconds")
+    
+    # Create subplots
+    fig = make_subplots(

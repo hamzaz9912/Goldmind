@@ -1,14 +1,13 @@
 {
   "symbol": "BTC-USD",
   "interval": "30m",
-  "trained_date": "2025-10-07T03:57:55.343044",
-  "accuracy": 0.43820224719101125,
-  "cv_score": 0.9058823529411765,
+  "trained_date": "2025-10-07T04:03:49.230197",
+  "accuracy": 0.6724137931034483,
+  "cv_score": 0.6727272727272727,
   "feature_names": [
     "Dividends",
     "Stock Splits",
     "VWAP",
-    "forward_return",
     "EMA_20",
     "EMA_50",
     "EMA_200",
@@ -46,10 +45,10 @@
     "volatility_20"
   ],
   "backtest": {
-    "total_return": 1.0162746887401046,
-    "sharpe_ratio": 0.9895079079528708,
-    "max_drawdown": -1.1781540645290607,
-    "win_rate": 40.0,
-    "total_trades": 5
+    "total_return": -0.07499202124581643,
+    "sharpe_ratio": -1.5896331939812,
+    "max_drawdown": -0.09643830193794202,
+    "win_rate": 0.0,
+    "total_trades": 1
   }
 }

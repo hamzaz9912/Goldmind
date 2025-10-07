@@ -173,10 +173,12 @@ class ModelTrainer:
             # Store feature columns
             self.feature_columns = features_df.columns.tolist()
             
-            # Split data
-            X_train, X_test, y_train, y_test = train_test_split(
-                features_df, target, test_size=0.2, random_state=42, stratify=target
-            )
+            # Split data (time-aware split, NO shuffling for time series)
+            split_idx = int(len(features_df) * 0.8)
+            X_train = features_df.iloc[:split_idx]
+            X_test = features_df.iloc[split_idx:]
+            y_train = target[:split_idx]
+            y_test = target[split_idx:]
             
             # Scale features
             scaler = StandardScaler()

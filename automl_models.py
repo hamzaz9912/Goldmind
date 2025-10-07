@@ -114,24 +114,35 @@ class AutoMLPipeline(ModelPipeline):
             print(f"Insufficient data for {symbol}")
             return None
         
-        # Create target
-        df = self.create_target(df, lookahead=5, threshold=0.002)
-        
-        # Prepare features
+        # CRITICAL: Prepare features FIRST (before creating target)
+        # This ensures features are calculated only on available data
         df_features, feature_cols = self.prepare_features(df)
         
-        # Align features and target
-        df_features = df_features[df_features.index.isin(df.index)]
-        df = df[df.index.isin(df_features.index)]
+        # Create target on the original data
+        df_with_target = self.create_target(df, lookahead=5, threshold=0.002)
         
-        X = df_features[feature_cols].values
-        y = df['target'].values
+        # CRITICAL: Shift features by lookahead to prevent data leakage
+        # Features at time t should only use information available at time t
+        # to predict target at time t+lookahead
+        lookahead = 5
+        df_features_shifted = df_features.shift(lookahead).dropna()
+        
+        # Align features and target (only keep rows that exist in both)
+        common_index = df_features_shifted.index.intersection(df_with_target.index)
+        df_features_final = df_features_shifted.loc[common_index]
+        df_target_final = df_with_target.loc[common_index]
+        
+        X = df_features_final[feature_cols].values
+        y = df_target_final['target'].values
+        
+        # Store test dataframe for backtesting (use the aligned target df)
+        df_test_full = df_target_final
         
         # Time series split for training/testing
         split_idx = int(len(X) * (1 - test_size))
         X_train, X_test = X[:split_idx], X[split_idx:]
         y_train, y_test = y[:split_idx], y[split_idx:]
-        df_test = df.iloc[split_idx:]
+        df_test = df_test_full.iloc[split_idx:]
         
         # Scale features
         scaler = StandardScaler()

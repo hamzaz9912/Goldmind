@@ -49,3 +49,7 @@ args = "uv add yfinance pandas-ta plotly scikit-learn joblib beautifulsoup4"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 41407
+externalPort = 3000

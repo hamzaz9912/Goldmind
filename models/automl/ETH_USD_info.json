@@ -1,0 +1,83 @@
+{
+  "symbol": "ETH-USD",
+  "interval": "30m",
+  "trained_date": "2025-10-07T04:01:41.576115",
+  "best_model": "rf",
+  "best_accuracy": 1.0,
+  "ensemble_accuracy": 1.0,
+  "feature_names": [
+    "Dividends",
+    "Stock Splits",
+    "VWAP",
+    "forward_return",
+    "EMA_20",
+    "EMA_50",
+    "EMA_200",
+    "EMA_Signal",
+    "RSI_14",
+    "RSI_Oversold",
+    "RSI_Overbought",
+    "MACD_12_26_9",
+    "MACDs_12_26_9",
+    "MACDh_12_26_9",
+    "MACD_Signal",
+    "ATR_14",
+    "ATR_Upper",
+    "ATR_Lower",
+    "VWAP_Signal",
+    "Volume_SMA_20",
+    "Volume_Surge",
+    "Pivot",
+    "R1",
+    "S1",
+    "R2",
+    "S2",
+    "Trend_Strength",
+    "Momentum_Score",
+    "returns",
+    "log_returns",
+    "volume_ma_5",
+    "volume_ma_10",
+    "volume_ratio",
+    "momentum_5",
+    "momentum_10",
+    "momentum_20",
+    "volatility_5",
+    "volatility_10",
+    "volatility_20"
+  ],
+  "models_performance": {
+    "rf": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "backtest_return": 0.0,
+      "backtest_sharpe": 0,
+      "win_rate": 0
+    },
+    "gb": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "backtest_return": 0.0,
+      "backtest_sharpe": 0,
+      "win_rate": 0
+    },
+    "xgb": {
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "backtest_return": 0.0,
+      "backtest_sharpe": 0,
+      "win_rate": 0
+    }
+  },
+  "ensemble_backtest": {
+    "total_return": 0.0,
+    "sharpe_ratio": 0,
+    "win_rate": 0
+  }
+}

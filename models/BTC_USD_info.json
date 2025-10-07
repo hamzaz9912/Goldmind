@@ -1,0 +1,11 @@
+{
+  "symbol": "BTC-USD",
+  "model_type": "RandomForest",
+  "accuracy": 0.72,
+  "cv_mean": 0.6816772151898733,
+  "cv_std": 0.0191062730935941,
+  "training_samples": 399,
+  "test_samples": 100,
+  "feature_count": 49,
+  "training_date": "2025-10-07T03:53:31.167482"
+}

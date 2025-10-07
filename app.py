@@ -44,8 +44,8 @@ market_type = st.sidebar.selectbox(
 
 # Asset selection based on market type
 if market_type == "Gold":
-    asset = "XAUUSD=X"
-    asset_display = "Gold (XAUUSD)"
+    asset = "GC=F"
+    asset_display = "Gold (GC=F)"
 else:
     crypto_assets = {
         "BTC-USD": "Bitcoin",

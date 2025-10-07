@@ -1,0 +1,11 @@
+{
+  "symbol": "ADA-USD",
+  "model_type": "RandomForest",
+  "accuracy": 0.58,
+  "cv_mean": 0.6039556962025316,
+  "cv_std": 0.025316257910619807,
+  "training_samples": 399,
+  "test_samples": 100,
+  "feature_count": 49,
+  "training_date": "2025-10-07T03:54:09.594305"
+}

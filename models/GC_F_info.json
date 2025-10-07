@@ -1,0 +1,11 @@
+{
+  "symbol": "GC=F",
+  "model_type": "RandomForest",
+  "accuracy": 0.73,
+  "cv_mean": 0.714367088607595,
+  "cv_std": 0.04381550535888169,
+  "training_samples": 399,
+  "test_samples": 100,
+  "feature_count": 49,
+  "training_date": "2025-10-07T03:54:01.945763"
+}

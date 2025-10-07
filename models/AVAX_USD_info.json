@@ -1,0 +1,11 @@
+{
+  "symbol": "AVAX-USD",
+  "model_type": "GradientBoosting",
+  "accuracy": 0.66,
+  "cv_mean": 0.5462974683544304,
+  "cv_std": 0.021445238480488342,
+  "training_samples": 399,
+  "test_samples": 100,
+  "feature_count": 49,
+  "training_date": "2025-10-07T03:54:15.920680"
+}

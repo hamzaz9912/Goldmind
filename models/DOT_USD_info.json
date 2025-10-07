@@ -1,0 +1,11 @@
+{
+  "symbol": "DOT-USD",
+  "model_type": "GradientBoosting",
+  "accuracy": 0.59,
+  "cv_mean": 0.5915822784810126,
+  "cv_std": 0.028866484275657633,
+  "training_samples": 399,
+  "test_samples": 100,
+  "feature_count": 49,
+  "training_date": "2025-10-07T03:54:22.019560"
+}

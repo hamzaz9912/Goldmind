@@ -1,0 +1,11 @@
+{
+  "symbol": "ETH-USD",
+  "model_type": "RandomForest",
+  "accuracy": 0.66,
+  "cv_mean": 0.5939556962025316,
+  "cv_std": 0.05239300371850859,
+  "training_samples": 399,
+  "test_samples": 100,
+  "feature_count": 49,
+  "training_date": "2025-10-07T03:53:34.744672"
+}

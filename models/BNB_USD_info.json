@@ -1,0 +1,11 @@
+{
+  "symbol": "BNB-USD",
+  "model_type": "GradientBoosting",
+  "accuracy": 0.54,
+  "cv_mean": 0.5613291139240507,
+  "cv_std": 0.04874964821010382,
+  "training_samples": 399,
+  "test_samples": 100,
+  "feature_count": 49,
+  "training_date": "2025-10-07T03:53:44.501308"
+}

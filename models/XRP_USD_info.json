@@ -1,0 +1,11 @@
+{
+  "symbol": "XRP-USD",
+  "model_type": "RandomForest",
+  "accuracy": 0.63,
+  "cv_mean": 0.6163924050632911,
+  "cv_std": 0.030236443395566005,
+  "training_samples": 399,
+  "test_samples": 100,
+  "feature_count": 49,
+  "training_date": "2025-10-07T03:54:05.750272"
+}

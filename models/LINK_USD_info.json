@@ -1,0 +1,11 @@
+{
+  "symbol": "LINK-USD",
+  "model_type": "RandomForest",
+  "accuracy": 0.63,
+  "cv_mean": 0.6014556962025316,
+  "cv_std": 0.024963801705863587,
+  "training_samples": 399,
+  "test_samples": 100,
+  "feature_count": 49,
+  "training_date": "2025-10-07T03:54:26.727536"
+}

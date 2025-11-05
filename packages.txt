@@ -1,0 +1,14 @@
+scipy
+pandas
+numpy
+scikit-learn
+plotly
+streamlit
+yfinance
+requests
+beautifulsoup4
+trafilatura
+joblib
+tensorflow
+stable-baselines3
+gym

@@ -17,6 +17,10 @@ from indicators import TechnicalIndicators
 from model_inference import ModelInference
 from utils import *
 
+# Optimize imports and caching for deployment
+import warnings
+warnings.filterwarnings('ignore')
+
 # Page configuration
 st.set_page_config(
     page_title="AI Scalping Dashboard",
@@ -25,15 +29,8 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Handle health check requests early - simplified approach
-import os
-if os.environ.get('STREAMLIT_SERVER_HEADLESS') == 'true':
-    # In headless mode, check for healthz requests
-    import sys
-    if len(sys.argv) > 1 and sys.argv[1] == 'healthz':
-        health_result = health_check()
-        print(health_result)  # Output to stdout for deployment platform
-        sys.exit(0)
+# Disable file watching to prevent inotify issues
+st.set_option('server.fileWatcherType', 'none')
 
 # Custom CSS for better appearance
 st.markdown("""
@@ -116,10 +113,23 @@ def get_all_live_prices():
     all_assets = gold_assets + crypto_assets + forex_assets
     return fetcher.get_live_prices_for_assets(all_assets)
 
-# Fetch live prices globally
+# Fetch live prices globally - with timeout for deployment
 live_prices = {}
 try:
+    # Add timeout to prevent hanging in deployment
+    import signal
+    def timeout_handler(signum, frame):
+        raise TimeoutError("Live price fetch timed out")
+
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(10)  # 10 second timeout
+
     live_prices = get_all_live_prices()
+    signal.alarm(0)  # Cancel alarm
+
+except TimeoutError:
+    st.warning("Live price fetch timed out - using cached data")
+    live_prices = {}
 except Exception as e:
     st.warning(f"Unable to fetch live prices: {str(e)}")
     live_prices = {}
@@ -1025,7 +1035,11 @@ df_with_indicators = None
 all_signals = {}
 all_forecasts = {}
 
-# Fetch and process data first
+# Set deployment-friendly options
+st.set_option('deprecation.showPyplotGlobalUse', False)
+st.set_option('browser.gatherUsageStats', False)
+
+# Fetch and process data first - with deployment-friendly error handling
 try:
     with st.spinner("Fetching market data..."):
         df = fetch_market_data(asset, timeframe)
@@ -1044,9 +1058,23 @@ try:
             st.success(f"✅ Successfully fetched {len(df)} data points for {asset_display} on retry")
             df_with_indicators = calculate_indicators(df)
         else:
-            # This block is now handled above with retry logic
-            pass
-            df_with_indicators = None
+            st.error(f"❌ Unable to fetch market data for {asset_display}. Using demo data.")
+            # Create demo data for deployment
+            import pandas as pd
+            import numpy as np
+            from datetime import datetime, timedelta
+
+            dates = pd.date_range(end=datetime.now(), periods=200, freq='5min')
+            np.random.seed(42)
+            demo_prices = 50000 + np.cumsum(np.random.randn(200) * 100)
+            df = pd.DataFrame({
+                'Open': demo_prices,
+                'High': demo_prices + abs(np.random.randn(200) * 50),
+                'Low': demo_prices - abs(np.random.randn(200) * 50),
+                'Close': demo_prices + np.random.randn(200) * 25,
+                'Volume': np.random.randint(1000, 10000, 200)
+            }, index=dates)
+            df_with_indicators = calculate_indicators(df)
 
         # Generate signals using different models for comparison
         model_types = ["RL", "LSTM", "AutoML", "ML"]

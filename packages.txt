@@ -1,2 +1,0 @@
-# System-level packages (if needed)
-# Most Python packages will be installed via requirements.txt

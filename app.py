@@ -46,8 +46,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Disable file watching to prevent inotify issues
-st.set_option('server.fileWatcherType', 'none')
+# Disable file watching to prevent inotify issues (only in deployment)
+# This option is not available in all Streamlit versions, so we check first
+try:
+    st.set_option('server.fileWatcherType', 'none')
+except Exception:
+    # Option not available in this version, skip silently
+    pass
 
 # Custom CSS for better appearance
 st.markdown("""
@@ -130,23 +135,40 @@ def get_all_live_prices():
     all_assets = gold_assets + crypto_assets + forex_assets
     return fetcher.get_live_prices_for_assets(all_assets)
 
-# Fetch live prices globally - with timeout for deployment
+# Fetch live prices globally - with cross-platform timeout for deployment
 live_prices = {}
 try:
-    # Add timeout to prevent hanging in deployment
-    import signal
-    def timeout_handler(signum, frame):
-        raise TimeoutError("Live price fetch timed out")
+    # Use threading-based timeout that's cross-platform
+    import threading
 
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(10)  # 10 second timeout
+    result_container = {"result": {}, "exception": None}
 
-    live_prices = get_all_live_prices()
-    signal.alarm(0)  # Cancel alarm
+    def fetch_with_timeout(container):
+        try:
+            container["result"] = get_all_live_prices()
+        except Exception as e:
+            container["exception"] = e
 
-except TimeoutError:
-    st.warning("Live price fetch timed out - using cached data")
-    live_prices = {}
+    # Start fetch in a separate thread
+    fetch_thread = threading.Thread(target=fetch_with_timeout, args=(result_container,))
+    fetch_thread.daemon = True
+    fetch_thread.start()
+
+    # Wait for completion with timeout
+    fetch_thread.join(timeout=10)  # 10 second timeout
+
+    if fetch_thread.is_alive():
+        # Thread is still running (timed out)
+        st.warning("Live price fetch timed out - using cached data")
+        live_prices = {}
+    elif result_container["exception"]:
+        # Thread completed with exception
+        st.warning(f"Unable to fetch live prices: {str(result_container['exception'])}")
+        live_prices = {}
+    else:
+        # Thread completed successfully
+        live_prices = result_container["result"]
+
 except Exception as e:
     st.warning(f"Unable to fetch live prices: {str(e)}")
     live_prices = {}
@@ -1052,9 +1074,13 @@ df_with_indicators = None
 all_signals = {}
 all_forecasts = {}
 
-# Set deployment-friendly options
-st.set_option('deprecation.showPyplotGlobalUse', False)
-st.set_option('browser.gatherUsageStats', False)
+# Set deployment-friendly options (with error handling)
+try:
+    st.set_option('deprecation.showPyplotGlobalUse', False)
+    st.set_option('browser.gatherUsageStats', False)
+except Exception:
+    # Options not available in this version, skip silently
+    pass
 
 # Fetch and process data first - with deployment-friendly error handling
 try:

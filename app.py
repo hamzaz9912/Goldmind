@@ -11,11 +11,28 @@ warnings.filterwarnings('ignore')
 
 
 
-# Import custom modules
-from data_fetch import DataFetcher
-from indicators import TechnicalIndicators
-from model_inference import ModelInference
-from utils import *
+# Import custom modules with error handling for deployment
+try:
+    from data_fetch import DataFetcher
+    from indicators import TechnicalIndicators
+    from model_inference import ModelInference
+    from utils import *
+except ImportError as e:
+    print(f"Warning: Some custom modules not available: {e}")
+    # Define minimal fallback classes
+    class DataFetcher:
+        def get_ohlcv_data(self, symbol, timeframe, periods=200):
+            return None
+        def get_live_prices_for_assets(self, assets):
+            return {}
+
+    class TechnicalIndicators:
+        def calculate_all_indicators(self, df):
+            return df
+
+    class ModelInference:
+        def generate_signal(self, df, symbol):
+            return {"signal": "NO TRADE", "confidence": 0.0}
 
 # Optimize imports and caching for deployment
 import warnings

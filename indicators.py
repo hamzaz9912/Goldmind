@@ -1,10 +1,9 @@
 import pandas as pd
 import numpy as np
-import pandas_ta as ta
 
 class TechnicalIndicators:
     """Calculate technical indicators for trading signals"""
-    
+
     def __init__(self):
         self.indicators = {}
     
@@ -56,13 +55,13 @@ class TechnicalIndicators:
     def add_ema_indicators(self, df):
         """Add Exponential Moving Averages"""
         try:
-            df['EMA_20'] = ta.ema(df['Close'], length=20)
-            df['EMA_50'] = ta.ema(df['Close'], length=50)
-            df['EMA_200'] = ta.ema(df['Close'], length=200)
-            
+            df['EMA_20'] = df['Close'].ewm(span=20, adjust=False).mean()
+            df['EMA_50'] = df['Close'].ewm(span=50, adjust=False).mean()
+            df['EMA_200'] = df['Close'].ewm(span=200, adjust=False).mean()
+
             # EMA crossover signals
             df['EMA_Signal'] = np.where(df['EMA_20'] > df['EMA_50'], 1, -1)
-            
+
             return df
         except Exception as e:
             print(f"Error calculating EMA: {str(e)}")
@@ -71,12 +70,16 @@ class TechnicalIndicators:
     def add_rsi(self, df, period=14):
         """Add Relative Strength Index"""
         try:
-            df[f'RSI_{period}'] = ta.rsi(df['Close'], length=period)
-            
+            delta = df['Close'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+            rs = gain / loss
+            df[f'RSI_{period}'] = 100 - (100 / (1 + rs))
+
             # RSI signals
             df['RSI_Oversold'] = np.where(df[f'RSI_{period}'] < 30, 1, 0)
             df['RSI_Overbought'] = np.where(df[f'RSI_{period}'] > 70, 1, 0)
-            
+
             return df
         except Exception as e:
             print(f"Error calculating RSI: {str(e)}")
@@ -85,19 +88,19 @@ class TechnicalIndicators:
     def add_macd(self, df, fast=12, slow=26, signal=9):
         """Add MACD indicator"""
         try:
-            macd_data = ta.macd(df['Close'], fast=fast, slow=slow, signal=signal)
-            
-            if macd_data is not None:
-                df[f'MACD_{fast}_{slow}_{signal}'] = macd_data[f'MACD_{fast}_{slow}_{signal}']
-                df[f'MACDs_{fast}_{slow}_{signal}'] = macd_data[f'MACDs_{fast}_{slow}_{signal}']
-                df[f'MACDh_{fast}_{slow}_{signal}'] = macd_data[f'MACDh_{fast}_{slow}_{signal}']
-                
-                # MACD signals
-                df['MACD_Signal'] = np.where(
-                    df[f'MACD_{fast}_{slow}_{signal}'] > df[f'MACDs_{fast}_{slow}_{signal}'], 
-                    1, -1
-                )
-            
+            ema_fast = df['Close'].ewm(span=fast, adjust=False).mean()
+            ema_slow = df['Close'].ewm(span=slow, adjust=False).mean()
+            macd_line = ema_fast - ema_slow
+            signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+            histogram = macd_line - signal_line
+
+            df[f'MACD_{fast}_{slow}_{signal}'] = macd_line
+            df[f'MACDs_{fast}_{slow}_{signal}'] = signal_line
+            df[f'MACDh_{fast}_{slow}_{signal}'] = histogram
+
+            # MACD signals
+            df['MACD_Signal'] = np.where(macd_line > signal_line, 1, -1)
+
             return df
         except Exception as e:
             print(f"Error calculating MACD: {str(e)}")
@@ -106,12 +109,16 @@ class TechnicalIndicators:
     def add_atr(self, df, period=14):
         """Add Average True Range"""
         try:
-            df[f'ATR_{period}'] = ta.atr(df['High'], df['Low'], df['Close'], length=period)
-            
+            high_low = df['High'] - df['Low']
+            high_close = np.abs(df['High'] - df['Close'].shift(1))
+            low_close = np.abs(df['Low'] - df['Close'].shift(1))
+            tr = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+            df[f'ATR_{period}'] = tr.rolling(window=period).mean()
+
             # ATR-based support/resistance levels
             df['ATR_Upper'] = df['Close'] + (2 * df[f'ATR_{period}'])
             df['ATR_Lower'] = df['Close'] - (2 * df[f'ATR_{period}'])
-            
+
             return df
         except Exception as e:
             print(f"Error calculating ATR: {str(e)}")
@@ -120,15 +127,17 @@ class TechnicalIndicators:
     def add_bollinger_bands(self, df, period=20, std_dev=2):
         """Add Bollinger Bands"""
         try:
-            bb_data = ta.bbands(df['Close'], length=period, std=std_dev)
-            
-            if bb_data is not None:
-                df[f'BB_Upper_{period}_{std_dev}'] = bb_data[f'BBU_{period}_{std_dev}']
-                df[f'BB_Middle_{period}_{std_dev}'] = bb_data[f'BBM_{period}_{std_dev}']
-                df[f'BB_Lower_{period}_{std_dev}'] = bb_data[f'BBL_{period}_{std_dev}']
-                df[f'BB_Width_{period}_{std_dev}'] = bb_data[f'BBB_{period}_{std_dev}']
-                df[f'BB_Percent_{period}_{std_dev}'] = bb_data[f'BBP_{period}_{std_dev}']
-            
+            sma = df['Close'].rolling(window=period).mean()
+            std = df['Close'].rolling(window=period).std()
+            upper = sma + (std_dev * std)
+            lower = sma - (std_dev * std)
+
+            df[f'BB_Upper_{period}_{std_dev}'] = upper
+            df[f'BB_Middle_{period}_{std_dev}'] = sma
+            df[f'BB_Lower_{period}_{std_dev}'] = lower
+            df[f'BB_Width_{period}_{std_dev}'] = (upper - lower) / sma
+            df[f'BB_Percent_{period}_{std_dev}'] = (df['Close'] - lower) / (upper - lower)
+
             return df
         except Exception as e:
             print(f"Error calculating Bollinger Bands: {str(e)}")
@@ -138,11 +147,14 @@ class TechnicalIndicators:
         """Add Volume Weighted Average Price"""
         try:
             if 'Volume' in df.columns:
-                df['VWAP'] = ta.vwap(df['High'], df['Low'], df['Close'], df['Volume'])
-                
+                typical_price = (df['High'] + df['Low'] + df['Close']) / 3
+                cumulative_volume = df['Volume'].cumsum()
+                cumulative_vwap = (typical_price * df['Volume']).cumsum() / cumulative_volume
+                df['VWAP'] = cumulative_vwap
+
                 # VWAP signals
                 df['VWAP_Signal'] = np.where(df['Close'] > df['VWAP'], 1, -1)
-            
+
             return df
         except Exception as e:
             print(f"Error calculating VWAP: {str(e)}")
@@ -152,13 +164,13 @@ class TechnicalIndicators:
         """Add Volume Simple Moving Average"""
         try:
             if 'Volume' in df.columns:
-                df[f'Volume_SMA_{period}'] = ta.sma(df['Volume'], length=period)
-                
+                df[f'Volume_SMA_{period}'] = df['Volume'].rolling(window=period).mean()
+
                 # Volume surge detection
                 df['Volume_Surge'] = np.where(
                     df['Volume'] > (1.5 * df[f'Volume_SMA_{period}']), 1, 0
                 )
-            
+
             return df
         except Exception as e:
             print(f"Error calculating Volume SMA: {str(e)}")

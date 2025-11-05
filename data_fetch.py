@@ -18,13 +18,13 @@ class DataFetcher:
     
     def get_ohlcv_data(self, symbol, timeframe, periods=200):
         """
-        Fetch OHLCV data from Yahoo Finance
-        
+        Fetch OHLCV data from Yahoo Finance with fallback options
+
         Args:
             symbol: Trading symbol (e.g., 'XAUUSD=X', 'BTC-USD')
             timeframe: Time interval ('5m', '15m', '30m', '1h', '1d')
             periods: Number of periods to fetch
-            
+
         Returns:
             DataFrame with OHLCV data
         """
@@ -32,41 +32,91 @@ class DataFetcher:
             # Map timeframes to yfinance intervals
             interval_map = {
                 '5m': '5m',
-                '15m': '15m', 
+                '15m': '15m',
                 '30m': '30m',
                 '1h': '1h',
                 '1d': '1d'
             }
-            
+
             interval = interval_map.get(timeframe, '30m')
-            
+
             # Calculate period string based on timeframe
             if timeframe in ['5m', '15m', '30m']:
-                period = '30d'  # 30 days for intraday
+                period = '7d'  # 7 days for intraday to avoid rate limits
             elif timeframe == '1h':
-                period = '60d'  # 60 days for hourly
+                period = '30d'  # 30 days for hourly
             else:
                 period = '1y'   # 1 year for daily
-            
+
             # Fetch data
             ticker = yf.Ticker(symbol)
             df = ticker.history(period=period, interval=interval)
-            
+
+            if df.empty:
+                # Try alternative symbols for common assets
+                alt_symbols = {
+                    'GC=F': ['GC=F', 'XAUUSD=X', 'GOLD', 'GLD'],
+                    'BTC-USD': ['BTC-USD', 'BTCUSD=X'],
+                    'ETH-USD': ['ETH-USD', 'ETHUSD=X'],
+                    'BNB-USD': ['BNB-USD', 'BNBUSD=X'],
+                    'SOL-USD': ['SOL-USD', 'SOLUSD=X'],
+                    'XRP-USD': ['XRP-USD', 'XRPUSD=X'],
+                    'ADA-USD': ['ADA-USD', 'ADAUSD=X'],
+                    'AVAX-USD': ['AVAX-USD', 'AVAXUSD=X'],
+                    'DOT-USD': ['DOT-USD', 'DOTUSD=X'],
+                    'MATIC-USD': ['MATIC-USD', 'MATICUSD=X'],
+                    'LINK-USD': ['LINK-USD', 'LINKUSD=X'],
+                    'UNI-USD': ['UNI-USD', 'UNIUSD=X'],
+                    'LTC-USD': ['LTC-USD', 'LTCUSD=X'],
+                    'BCH-USD': ['BCH-USD', 'BCHUSD=X'],
+                    'ALGO-USD': ['ALGO-USD', 'ALGOUSD=X'],
+                    'VET-USD': ['VET-USD', 'VETUSD=X'],
+                    'ICP-USD': ['ICP-USD', 'ICPUSD=X'],
+                    'ATOM-USD': ['ATOM-USD', 'ATOMUSD=X'],
+                    'FIL-USD': ['FIL-USD', 'FILUSD=X'],
+                    'TRX-USD': ['TRX-USD', 'TRXUSD=X'],
+                    'ETC-USD': ['ETC-USD', 'ETCUSD=X']
+                }
+
+                if symbol in alt_symbols:
+                    for alt_symbol in alt_symbols[symbol][1:]:  # Skip first (original)
+                        try:
+                            ticker = yf.Ticker(alt_symbol)
+                            df = ticker.history(period=period, interval=interval)
+                            if not df.empty:
+                                print(f"Using alternative symbol {alt_symbol} for {symbol}")
+                                break
+                        except:
+                            continue
+
             if df.empty:
                 return None
-                
-            # Clean data
+
+            # Clean data - remove unnecessary columns
+            df = df.drop(columns=['Dividends', 'Stock Splits', 'Capital Gains'], errors='ignore')
             df = df.dropna()
-            
-            # Keep only the last 'periods' rows
-            df = df.tail(periods)
-            
+
+            # Keep only the last 'periods' rows, but ensure we have enough data
+            if len(df) > periods:
+                df = df.tail(periods)
+            elif len(df) < 50:  # If we have very little data, try to get more
+                # Try with a longer period for this specific case
+                try:
+                    ticker = yf.Ticker(symbol)
+                    df_extended = ticker.history(period='60d', interval=interval)
+                    if not df_extended.empty and len(df_extended) > len(df):
+                        df_extended = df_extended.drop(columns=['Dividends', 'Stock Splits', 'Capital Gains'], errors='ignore')
+                        df_extended = df_extended.dropna()
+                        df = df_extended.tail(min(periods, len(df_extended)))
+                except:
+                    pass  # Keep original df if extension fails
+
             # Add volume-based calculations
             if 'Volume' in df.columns:
                 df['VWAP'] = (df['Close'] * df['Volume']).cumsum() / df['Volume'].cumsum()
-            
+
             return df
-            
+
         except Exception as e:
             print(f"Error fetching data for {symbol}: {str(e)}")
             return None
@@ -231,24 +281,65 @@ class DataFetcher:
     def get_real_time_price(self, symbol):
         """
         Get real-time price for a symbol
-        
+
         Args:
             symbol: Trading symbol
-            
+
         Returns:
             Current price as float
         """
         try:
             ticker = yf.Ticker(symbol)
             data = ticker.history(period='1d', interval='1m')
-            
+
             if not data.empty:
                 return float(data['Close'].iloc[-1])
             return None
-            
+
         except Exception as e:
             print(f"Error fetching real-time price for {symbol}: {str(e)}")
             return None
+
+    def get_live_prices_for_assets(self, asset_list):
+        """
+        Get live prices for multiple assets simultaneously
+
+        Args:
+            asset_list: List of trading symbols
+
+        Returns:
+            Dictionary with symbol: price pairs
+        """
+        live_prices = {}
+        for symbol in asset_list:
+            price = self.get_real_time_price(symbol)
+            if price is not None:
+                live_prices[symbol] = price
+            else:
+                # Try alternative symbols if available
+                alt_symbols = {
+                    'GC=F': ['GC=F', 'XAUUSD=X', 'GOLD'],
+                    'BTC-USD': ['BTC-USD', 'BTCUSD=X'],
+                    'ETH-USD': ['ETH-USD', 'ETHUSD=X'],
+                    'BNB-USD': ['BNB-USD', 'BNBUSD=X'],
+                    'SOL-USD': ['SOL-USD', 'SOLUSD=X'],
+                    'XRP-USD': ['XRP-USD', 'XRPUSD=X'],
+                    'ADA-USD': ['ADA-USD', 'ADAUSD=X'],
+                    'AVAX-USD': ['AVAX-USD', 'AVAXUSD=X'],
+                    'DOT-USD': ['DOT-USD', 'DOTUSD=X'],
+                    'EURUSD=X': ['EURUSD=X', 'EURUSD'],
+                    'GBPUSD=X': ['GBPUSD=X', 'GBPUSD'],
+                    'USDJPY=X': ['USDJPY=X', 'USDJPY']
+                }
+
+                if symbol in alt_symbols:
+                    for alt_symbol in alt_symbols[symbol][1:]:
+                        price = self.get_real_time_price(alt_symbol)
+                        if price is not None:
+                            live_prices[symbol] = price
+                            break
+
+        return live_prices
     
     def validate_symbol(self, symbol):
         """

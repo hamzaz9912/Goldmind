@@ -1492,3 +1492,83 @@ if auto_refresh:
         remaining_time = refresh_interval - time_since_refresh
         if remaining_time > 0:
             st.info(f"⏱️ Next refresh in {int(remaining_time)} seconds")
+
+# Health check endpoint for monitoring
+def health_check():
+    """Simple health check function"""
+    try:
+        # Test if data fetching works
+        fetcher = DataFetcher()
+        test_data = fetcher.get_ohlcv_data('GC=F', '5m', periods=5)
+        data_status = "data_fetch_ok" if test_data is not None and not test_data.empty else "data_fetch_failed"
+
+        # Test model inference
+        model_status = "model_ok"
+        try:
+            model_inference = ModelInference(model_type="ML")
+            test_signal = model_inference.generate_signal(test_data, 'GC=F') if test_data is not None else None
+            if test_signal is None:
+                model_status = "model_failed"
+        except Exception as model_e:
+            model_status = f"model_error: {str(model_e)}"
+
+        return {
+            "status": "healthy" if data_status == "data_fetch_ok" and model_status == "model_ok" else "degraded",
+            "timestamp": datetime.now().isoformat(),
+            "data_fetch": data_status,
+            "model_inference": model_status,
+            "model_types": ["RL", "LSTM", "AutoML", "ML"]
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }
+
+# Create a simple health check page
+def show_health_page():
+    """Display health check information"""
+    st.title("🔍 Health Check Dashboard")
+
+    health_info = health_check()
+
+    # Status indicator
+    if health_info["status"] == "healthy":
+        st.success("✅ System Status: HEALTHY")
+    elif health_info["status"] == "degraded":
+        st.warning("⚠️ System Status: DEGRADED")
+    else:
+        st.error("❌ System Status: UNHEALTHY")
+
+    # Health metrics
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.metric("Data Fetch", health_info.get("data_fetch", "unknown"))
+
+    with col2:
+        st.metric("Model Inference", health_info.get("model_inference", "unknown"))
+
+    with col3:
+        st.metric("Last Check", health_info.get("timestamp", "unknown")[:19])
+
+    # Model types
+    st.subheader("🤖 Available Models")
+    models = health_info.get("model_types", [])
+    for model in models:
+        st.write(f"• {model}")
+
+    # Error details if any
+    if "error" in health_info:
+        st.error(f"Error: {health_info['error']}")
+
+# Check if health page is requested
+if st.query_params.get("page") == "health":
+    show_health_page()
+    st.stop()
+
+# Add health check to Streamlit if needed
+if __name__ == "__main__":
+    # This ensures the app runs properly when executed directly
+    pass

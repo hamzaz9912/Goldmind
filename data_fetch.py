@@ -18,7 +18,7 @@ class DataFetcher:
     
     def get_ohlcv_data(self, symbol, timeframe, periods=200):
         """
-        Fetch OHLCV data from Yahoo Finance with fallback options
+        Fetch OHLCV data from Yahoo Finance with enhanced fallback options
 
         Args:
             symbol: Trading symbol (e.g., 'XAUUSD=X', 'BTC-USD')
@@ -48,48 +48,54 @@ class DataFetcher:
             else:
                 period = '1y'   # 1 year for daily
 
-            # Fetch data
-            ticker = yf.Ticker(symbol)
-            df = ticker.history(period=period, interval=interval)
+            # Enhanced symbol mapping with more alternatives
+            alt_symbols = {
+                'GC=F': ['IAU', 'GLD', 'GC=F', 'XAUUSD=X', 'GOLD'],
+                'BTC-USD': ['BTC-USD', 'BTCUSD=X', 'BTC-USD', 'BTCUSD=X'],
+                'ETH-USD': ['ETH-USD', 'ETHUSD=X', 'ETH-USD', 'ETHUSD=X'],
+                'BNB-USD': ['BNB-USD', 'BNBUSD=X', 'BNB-USD', 'BNBUSD=X'],
+                'SOL-USD': ['SOL-USD', 'SOLUSD=X', 'SOL-USD', 'SOLUSD=X'],
+                'XRP-USD': ['XRP-USD', 'XRPUSD=X', 'XRP-USD', 'XRPUSD=X'],
+                'ADA-USD': ['ADA-USD', 'ADAUSD=X', 'ADA-USD', 'ADAUSD=X'],
+                'AVAX-USD': ['AVAX-USD', 'AVAXUSD=X', 'AVAX-USD', 'AVAXUSD=X'],
+                'DOT-USD': ['DOT-USD', 'DOTUSD=X', 'DOT-USD', 'DOTUSD=X'],
+                'MATIC-USD': ['MATIC-USD', 'MATICUSD=X', 'MATIC-USD', 'MATICUSD=X'],
+                'LINK-USD': ['LINK-USD', 'LINKUSD=X', 'LINK-USD', 'LINKUSD=X'],
+                'UNI-USD': ['UNI-USD', 'UNIUSD=X', 'UNI-USD', 'UNIUSD=X'],
+                'LTC-USD': ['LTC-USD', 'LTCUSD=X', 'LTC-USD', 'LTCUSD=X'],
+                'BCH-USD': ['BCH-USD', 'BCHUSD=X', 'BCH-USD', 'BCHUSD=X'],
+                'ALGO-USD': ['ALGO-USD', 'ALGOUSD=X', 'ALGO-USD', 'ALGOUSD=X'],
+                'VET-USD': ['VET-USD', 'VETUSD=X', 'VET-USD', 'VETUSD=X'],
+                'ICP-USD': ['ICP-USD', 'ICPUSD=X', 'ICP-USD', 'ICPUSD=X'],
+                'ATOM-USD': ['ATOM-USD', 'ATOMUSD=X', 'ATOM-USD', 'ATOMUSD=X'],
+                'FIL-USD': ['FIL-USD', 'FILUSD=X', 'FIL-USD', 'FILUSD=X'],
+                'TRX-USD': ['TRX-USD', 'TRXUSD=X', 'TRX-USD', 'TRXUSD=X'],
+                'ETC-USD': ['ETC-USD', 'ETCUSD=X', 'ETC-USD', 'ETCUSD=X'],
+                'IAU': ['IAU', 'GLD', 'GC=F', 'XAUUSD=X', 'GOLD']
+            }
 
-            if df.empty:
-                # Try alternative symbols for common assets
-                alt_symbols = {
-                    'GC=F': ['GC=F', 'XAUUSD=X', 'GOLD', 'GLD'],
-                    'BTC-USD': ['BTC-USD', 'BTCUSD=X'],
-                    'ETH-USD': ['ETH-USD', 'ETHUSD=X'],
-                    'BNB-USD': ['BNB-USD', 'BNBUSD=X'],
-                    'SOL-USD': ['SOL-USD', 'SOLUSD=X'],
-                    'XRP-USD': ['XRP-USD', 'XRPUSD=X'],
-                    'ADA-USD': ['ADA-USD', 'ADAUSD=X'],
-                    'AVAX-USD': ['AVAX-USD', 'AVAXUSD=X'],
-                    'DOT-USD': ['DOT-USD', 'DOTUSD=X'],
-                    'MATIC-USD': ['MATIC-USD', 'MATICUSD=X'],
-                    'LINK-USD': ['LINK-USD', 'LINKUSD=X'],
-                    'UNI-USD': ['UNI-USD', 'UNIUSD=X'],
-                    'LTC-USD': ['LTC-USD', 'LTCUSD=X'],
-                    'BCH-USD': ['BCH-USD', 'BCHUSD=X'],
-                    'ALGO-USD': ['ALGO-USD', 'ALGOUSD=X'],
-                    'VET-USD': ['VET-USD', 'VETUSD=X'],
-                    'ICP-USD': ['ICP-USD', 'ICPUSD=X'],
-                    'ATOM-USD': ['ATOM-USD', 'ATOMUSD=X'],
-                    'FIL-USD': ['FIL-USD', 'FILUSD=X'],
-                    'TRX-USD': ['TRX-USD', 'TRXUSD=X'],
-                    'ETC-USD': ['ETC-USD', 'ETCUSD=X']
-                }
+            # Try all symbols in the list (including original)
+            symbols_to_try = alt_symbols.get(symbol, [symbol])
 
-                if symbol in alt_symbols:
-                    for alt_symbol in alt_symbols[symbol][1:]:  # Skip first (original)
-                        try:
-                            ticker = yf.Ticker(alt_symbol)
-                            df = ticker.history(period=period, interval=interval)
-                            if not df.empty:
-                                print(f"Using alternative symbol {alt_symbol} for {symbol}")
-                                break
-                        except:
-                            continue
+            df = None
+            for try_symbol in symbols_to_try:
+                try:
+                    print(f"Trying to fetch data for {try_symbol}...")
+                    ticker = yf.Ticker(try_symbol)
+                    df = ticker.history(period=period, interval=interval)
 
-            if df.empty:
+                    if not df.empty and len(df) >= 10:  # Require at least 10 data points
+                        print(f"Successfully fetched data for {try_symbol}")
+                        break
+                    else:
+                        print(f"No data or insufficient data for {try_symbol}")
+                        df = None
+                except Exception as e:
+                    print(f"Error with {try_symbol}: {str(e)}")
+                    continue
+
+            if df is None or df.empty:
+                print(f"All symbol attempts failed for {symbol}")
                 return None
 
             # Clean data - remove unnecessary columns
@@ -316,9 +322,9 @@ class DataFetcher:
             if price is not None:
                 live_prices[symbol] = price
             else:
-                # Try alternative symbols if available
+                # Try alternative symbols if available - prioritize working symbols
                 alt_symbols = {
-                    'GC=F': ['GC=F', 'XAUUSD=X', 'GOLD'],
+                    'GC=F': ['IAU', 'GLD', 'GC=F', 'XAUUSD=X', 'GOLD'],  # IAU first as most reliable
                     'BTC-USD': ['BTC-USD', 'BTCUSD=X'],
                     'ETH-USD': ['ETH-USD', 'ETHUSD=X'],
                     'BNB-USD': ['BNB-USD', 'BNBUSD=X'],
@@ -333,7 +339,7 @@ class DataFetcher:
                 }
 
                 if symbol in alt_symbols:
-                    for alt_symbol in alt_symbols[symbol][1:]:
+                    for alt_symbol in alt_symbols[symbol]:  # Try all alternatives including original
                         price = self.get_real_time_price(alt_symbol)
                         if price is not None:
                             live_prices[symbol] = price

@@ -7,9 +7,10 @@ from datetime import datetime, timedelta
 import time
 import warnings
 from sklearn.linear_model import LinearRegression
+import pytz
 warnings.filterwarnings('ignore')
 
-
+ 
 
 # Import custom modules with error handling for deployment
 try:
@@ -123,8 +124,23 @@ if 'forecast_accuracy_tracking' not in st.session_state:
 st.title("🤖 AI-Driven Scalping Dashboard")
 st.markdown("Real-time Buy/Sell signals for Gold & Top 20 Cryptocurrencies")
 
+# File upload section
+st.sidebar.header("📁 Custom Data Upload")
+uploaded_file = st.sidebar.file_uploader(
+    "Upload CSV file with OHLCV data",
+    type=['csv'],
+    help="Upload CSV with OHLC data. Supports variations: Date/Open/High/Low/Close(or Price)/Volume(or Vol.). Case-insensitive, handles commas and K/M suffixes."
+)
+
+# Data source selection
+data_source = st.sidebar.radio(
+    "Data Source",
+    ["Live Market Data", "Uploaded File"],
+    key="data_source"
+)
+
 # Define asset lists for live prices
-gold_assets = ['GC=F']
+gold_assets = ['IAU']
 crypto_assets = ['BTC-USD', 'ETH-USD', 'BNB-USD', 'SOL-USD', 'XRP-USD', 'ADA-USD', 'AVAX-USD', 'DOT-USD']
 forex_assets = ['EURUSD=X', 'GBPUSD=X', 'USDJPY=X', 'USDCHF=X', 'AUDUSD=X']
 
@@ -173,47 +189,25 @@ except Exception as e:
     st.warning(f"Unable to fetch live prices: {str(e)}")
     live_prices = {}
 
-# Live Prices Section - Prominently displayed at the top
-st.header("💰 Live Market Prices")
+# Live Prices Section - Prominently displayed at the top (only for live market data)
+if data_source == "Live Market Data":
+    st.header("💰 Live Market Prices")
 
-try:
+    try:
 
-    # Display live prices in organized sections
-    col1, col2, col3 = st.columns(3)
+        # Display live prices in organized sections
+        col1, col2, col3 = st.columns(3)
 
-    with col1:
-        st.subheader("🥇 Gold")
-        if 'GC=F' in live_prices:
-            st.metric("Gold (GC=F)", f"${live_prices['GC=F']:.2f}")
-        else:
-            st.metric("Gold (GC=F)", "N/A")
-
-    with col2:
-        st.subheader("₿ Top Cryptocurrencies")
-        for asset in crypto_assets[:4]:  # Show first 4 cryptos
-            if asset in live_prices:
-                asset_name = asset.replace('-USD', '')
-                st.metric(f"{asset_name}", f"${live_prices[asset]:.2f}")
+        with col1:
+            st.subheader("🥇 Gold")
+            if 'IAU' in live_prices:
+                st.metric("Gold (IAU)", f"${live_prices['IAU']:.2f}")
             else:
-                asset_name = asset.replace('-USD', '')
-                st.metric(f"{asset_name}", "N/A")
+                st.metric("Gold (IAU)", "N/A")
 
-    with col3:
-        st.subheader("💱 Major Forex Pairs")
-        for asset in forex_assets[:4]:  # Show first 4 forex pairs
-            if asset in live_prices:
-                pair_name = asset.replace('=X', '').replace('USD', '/USD')
-                st.metric(f"{pair_name}", f"{live_prices[asset]:.4f}")
-            else:
-                pair_name = asset.replace('=X', '').replace('USD', '/USD')
-                st.metric(f"{pair_name}", "N/A")
-
-    # Additional crypto assets in a second row if needed
-    if len(crypto_assets) > 4:
-        st.subheader("₿ Additional Cryptocurrencies")
-        cols = st.columns(4)
-        for i, asset in enumerate(crypto_assets[4:]):
-            with cols[i % 4]:
+        with col2:
+            st.subheader("₿ Top Cryptocurrencies")
+            for asset in crypto_assets[:4]:  # Show first 4 cryptos
                 if asset in live_prices:
                     asset_name = asset.replace('-USD', '')
                     st.metric(f"{asset_name}", f"${live_prices[asset]:.2f}")
@@ -221,12 +215,9 @@ try:
                     asset_name = asset.replace('-USD', '')
                     st.metric(f"{asset_name}", "N/A")
 
-    # Additional forex pairs
-    if len(forex_assets) > 4:
-        st.subheader("💱 Additional Forex Pairs")
-        cols = st.columns(len(forex_assets) - 4)
-        for i, asset in enumerate(forex_assets[4:]):
-            with cols[i]:
+        with col3:
+            st.subheader("💱 Major Forex Pairs")
+            for asset in forex_assets[:4]:  # Show first 4 forex pairs
                 if asset in live_prices:
                     pair_name = asset.replace('=X', '').replace('USD', '/USD')
                     st.metric(f"{pair_name}", f"{live_prices[asset]:.4f}")
@@ -234,8 +225,41 @@ try:
                     pair_name = asset.replace('=X', '').replace('USD', '/USD')
                     st.metric(f"{pair_name}", "N/A")
 
-except Exception as e:
-    st.error(f"Error fetching live prices: {str(e)}")
+        # Additional crypto assets in a second row if needed
+        if len(crypto_assets) > 4:
+            st.subheader("₿ Additional Cryptocurrencies")
+            cols = st.columns(4)
+            for i, asset in enumerate(crypto_assets[4:]):
+                with cols[i % 4]:
+                    if asset in live_prices:
+                        asset_name = asset.replace('-USD', '')
+                        st.metric(f"{asset_name}", f"${live_prices[asset]:.2f}")
+                    else:
+                        asset_name = asset.replace('-USD', '')
+                        st.metric(f"{asset_name}", "N/A")
+
+        # Additional forex pairs
+        if len(forex_assets) > 4:
+            st.subheader("💱 Additional Forex Pairs")
+            cols = st.columns(len(forex_assets) - 4)
+            for i, asset in enumerate(forex_assets[4:]):
+                with cols[i]:
+                    if asset in live_prices:
+                        pair_name = asset.replace('=X', '').replace('USD', '/USD')
+                        st.metric(f"{pair_name}", f"{live_prices[asset]:.4f}")
+                    else:
+                        pair_name = asset.replace('=X', '').replace('USD', '/USD')
+                        st.metric(f"{pair_name}", "N/A")
+
+    except Exception as e:
+        st.error(f"Error fetching live prices: {str(e)}")
+elif data_source == "Uploaded File":
+    st.header("📁 Uploaded File Analysis")
+    if uploaded_file is not None:
+        st.success(f"✅ File '{uploaded_file.name}' uploaded successfully!")
+        st.info("📊 Analysis and forecasting based on your uploaded data")
+    else:
+        st.info("📤 Please upload a CSV file to begin analysis")
 
 st.markdown("---")
 
@@ -275,8 +299,8 @@ market_type = st.sidebar.selectbox(
 
 # Asset selection based on market type
 if market_type == "Gold":
-    asset = "GC=F"
-    asset_display = "Gold (GC=F)"
+    asset = "IAU"
+    asset_display = "Gold (IAU)"
 elif market_type == "Crypto":
     crypto_assets = {
         "BTC-USD": "Bitcoin",
@@ -362,6 +386,24 @@ forecast_duration = st.sidebar.selectbox(
     index=0,  # Default to 5 minutes
     key="forecast_duration"
 )
+
+# Animation control
+enable_animation = st.sidebar.checkbox(
+    "Enable Forecast Animation",
+    value=False,
+    help="Animate the forecast progression over time"
+)
+
+animation_speed = 0.5  # Default value
+if enable_animation:
+    animation_speed = st.sidebar.slider(
+        "Animation Speed (seconds)",
+        min_value=0.1,
+        max_value=2.0,
+        value=0.5,
+        step=0.1,
+        help="Speed of forecast animation"
+    )
 
 
 # Auto-refresh toggle
@@ -669,7 +711,7 @@ def forecast_next_period(df, minutes, interval_seconds=0.30):
         print(f"Error forecasting: {str(e)}")
         return [df['Close'].iloc[-1]] * steps
 
-def create_forecast_chart(df, asset_display, forecasts, minutes, interval_seconds=0.30, model_type="RL", signal_data=None):
+def create_forecast_chart(df, asset_display, forecasts, minutes, interval_seconds=0.30, model_type="RL", signal_data=None, enable_animation=False, animation_speed=0.5):
     """Create a high-precision forecast chart with configurable intervals and trading levels"""
     fig = go.Figure()
 
@@ -689,37 +731,109 @@ def create_forecast_chart(df, asset_display, forecasts, minutes, interval_second
     steps = len(forecasts)
     forecast_times = [df.index[-1] + pd.Timedelta(seconds=(i+1)*interval_seconds) for i in range(steps)]
 
-    # Create smooth forecast line
-    fig.add_trace(
-        go.Scatter(
-            x=forecast_times,
-            y=forecasts,
-            name=f'{model_type} Forecast',
-            mode='lines',
-            line=dict(color='#ff4444', width=3, shape='spline', smoothing=1.3),
-            fill='tonexty',
-            fillcolor='rgba(255, 68, 68, 0.1)'
-        )
-    )
+    if enable_animation:
+        # Create animated forecast with progressive reveal
+        # Add frames for animation
+        frames = []
+        for i in range(0, steps, max(1, int(1/interval_seconds))):  # Show every second
+            frame_data = [
+                go.Scatter(
+                    x=historical_data.index,
+                    y=historical_data['Close'],
+                    name='Historical Price',
+                    line=dict(color='#00ff88', width=3),
+                    mode='lines'
+                ),
+                go.Scatter(
+                    x=forecast_times[:i+1],
+                    y=forecasts[:i+1],
+                    name=f'{model_type} Forecast',
+                    mode='lines',
+                    line=dict(color='#ff4444', width=4, shape='spline', smoothing=1.3),
+                    fill='tonexty',
+                    fillcolor='rgba(255, 68, 68, 0.2)'
+                )
+            ]
 
-    # Add forecast markers at key intervals (every 10 seconds)
-    marker_indices = [i for i in range(0, steps, int(10/interval_seconds)) if i < steps]
-    if marker_indices:
+            # Add current forecast point marker
+            if i < steps:
+                frame_data.append(
+                    go.Scatter(
+                        x=[forecast_times[i]],
+                        y=[forecasts[i]],
+                        name='Current Forecast',
+                        mode='markers',
+                        marker=dict(
+                            color='#ffaa00',
+                            size=12,
+                            symbol='diamond',
+                            line=dict(color='white', width=3)
+                        ),
+                        showlegend=False
+                    )
+                )
+
+            frames.append(go.Frame(data=frame_data, name=f"frame_{i}"))
+
+        # Create initial figure with first frame
+        fig = go.Figure(
+            data=frames[0].data,
+            frames=frames
+        )
+
+        # Add animation controls
+        fig.update_layout(
+            updatemenus=[dict(
+                type="buttons",
+                buttons=[dict(label="Play",
+                            method="animate",
+                            args=[None, dict(frame=dict(duration=animation_speed*1000, redraw=True),
+                                            mode='immediate',
+                                            fromcurrent=True,
+                                            transition=dict(duration=300))]),
+                        dict(label="Pause",
+                            method="animate",
+                            args=[[None], dict(frame=dict(duration=0, redraw=False),
+                                             mode='immediate',
+                                             transition=dict(duration=0))])]
+            )]
+        )
+    else:
+        # Static forecast display
         fig.add_trace(
             go.Scatter(
-                x=[forecast_times[i] for i in marker_indices],
-                y=[forecasts[i] for i in marker_indices],
-                name='Forecast Points',
-                mode='markers',
-                marker=dict(
-                    color='#ffaa00',
-                    size=6,
-                    symbol='circle',
-                    line=dict(color='white', width=1)
-                ),
-                showlegend=False
+                x=forecast_times,
+                y=forecasts,
+                name=f'{model_type} Forecast',
+                mode='lines',
+                line=dict(color='#ff4444', width=4, shape='spline', smoothing=1.3),
+                fill='tonexty',
+                fillcolor='rgba(255, 68, 68, 0.2)'
             )
         )
+
+        # Add forecast markers at key intervals with price labels
+        marker_interval = 30 if interval_seconds < 1 else 60  # 30 seconds for sub-minute, 60 seconds for minute intervals
+        marker_indices = [i for i in range(0, steps, int(marker_interval/interval_seconds)) if i < steps]
+        if marker_indices:
+            fig.add_trace(
+                go.Scatter(
+                    x=[forecast_times[i] for i in marker_indices],
+                    y=[forecasts[i] for i in marker_indices],
+                    name='Forecast Points',
+                    mode='markers+text',
+                    marker=dict(
+                        color='#ffaa00',
+                        size=10,
+                        symbol='diamond',
+                        line=dict(color='white', width=2)
+                    ),
+                    text=[f"${forecasts[i]:.4f}" for i in marker_indices],
+                    textposition="top center",
+                    textfont=dict(size=11, color='#ffaa00', weight='bold'),
+                    showlegend=False
+                )
+            )
 
     # Add trading levels if signal data is available
     if signal_data:
@@ -760,10 +874,21 @@ def create_forecast_chart(df, asset_display, forecasts, minutes, interval_second
                 borderpad=4
             )
 
+    # Get current time in user's timezone
+    try:
+        # Try to get user's timezone from environment or use default
+        user_timezone = pytz.timezone('Asia/Karachi')  # Default timezone
+        current_time = datetime.now(user_timezone)
+        time_str = current_time.strftime('%H:%M:%S %Z')
+    except:
+        # Fallback to UTC if timezone fails
+        current_time = datetime.now()
+        time_str = current_time.strftime('%H:%M:%S UTC')
+
     # Enhanced layout with better styling
     fig.update_layout(
         title={
-            'text': f'🔮 {asset_display} - {model_type} {minutes} Minute Forecast ({interval_seconds}s intervals)',
+            'text': f'🔮 {asset_display} - {model_type} {minutes} Minute Forecast ({interval_seconds}s intervals)<br><span style="font-size:12px;color:#888;">Current Time: {time_str}</span>',
             'y':0.95,
             'x':0.5,
             'xanchor': 'center',
@@ -771,7 +896,7 @@ def create_forecast_chart(df, asset_display, forecasts, minutes, interval_second
             'font': dict(size=16, color='#00ff88')
         },
         xaxis_title='Time (Real-time)',
-        yaxis_title='Price',
+        yaxis_title='Price (USD)',
         height=500,
         showlegend=True,
         template='plotly_dark',
@@ -781,21 +906,23 @@ def create_forecast_chart(df, asset_display, forecasts, minutes, interval_second
         xaxis=dict(
             showgrid=True,
             gridcolor='rgba(255,255,255,0.1)',
-            linecolor='rgba(255,255,255,0.3)'
+            linecolor='rgba(255,255,255,0.3)',
+            tickformat='%H:%M:%S'
         ),
         yaxis=dict(
             showgrid=True,
             gridcolor='rgba(255,255,255,0.1)',
-            linecolor='rgba(255,255,255,0.3)'
+            linecolor='rgba(255,255,255,0.3)',
+            tickformat='.4f'
         )
     )
 
-    # Add current price annotation
+    # Add current price annotation with more details
     current_price = df['Close'].iloc[-1]
     fig.add_annotation(
         x=df.index[-1],
         y=current_price,
-        text=f"Current: {current_price:.4f}",
+        text=f"Current: ${current_price:.4f}<br>Last Update: {df.index[-1].strftime('%H:%M:%S')}",
         showarrow=True,
         arrowhead=2,
         arrowsize=1,
@@ -804,16 +931,49 @@ def create_forecast_chart(df, asset_display, forecasts, minutes, interval_second
         ax=50,
         ay=-30,
         font=dict(color="#00ff88", size=12),
-        bgcolor='rgba(0,0,0,0.7)',
+        bgcolor='rgba(0,0,0,0.8)',
         bordercolor="#00ff88",
-        borderwidth=1
+        borderwidth=2
     )
+
+    # Add final forecast price annotation
+    if forecasts:
+        final_price = forecasts[-1]
+        price_change = ((final_price - current_price) / current_price) * 100
+        color = "#00ff88" if price_change >= 0 else "#ff4444"
+        fig.add_annotation(
+            x=forecast_times[-1],
+            y=final_price,
+            text=f"Forecast: ${final_price:.4f}<br>({price_change:+.2f}%)",
+            showarrow=True,
+            arrowhead=2,
+            arrowsize=1,
+            arrowwidth=2,
+            arrowcolor=color,
+            ax=-50,
+            ay=30,
+            font=dict(color=color, size=12),
+            bgcolor='rgba(0,0,0,0.8)',
+            bordercolor=color,
+            borderwidth=2
+        )
 
     return fig
 
-def create_multi_model_comparison_chart(df, asset_display, model_forecasts, minutes):
+def create_multi_model_comparison_chart(df, asset_display, model_forecasts, minutes, interval_seconds=0.30, enable_animation=False, animation_speed=0.5):
     """Create a professional chart comparing forecasts from different models with configurable precision"""
     fig = go.Figure()
+
+    # Get current time in user's timezone
+    try:
+        # Try to get user's timezone from environment or use default
+        user_timezone = pytz.timezone('Asia/Karachi')  # Default timezone
+        current_time = datetime.now(user_timezone)
+        time_str = current_time.strftime('%H:%M:%S %Z')
+    except:
+        # Fallback to UTC if timezone fails
+        current_time = datetime.now()
+        time_str = current_time.strftime('%H:%M:%S UTC')
 
     # Historical data - show last 50 points for better context
     historical_data = df.tail(50)
@@ -861,7 +1021,7 @@ def create_multi_model_comparison_chart(df, asset_display, model_forecasts, minu
     for model_type, forecasts in model_forecasts.items():
         if forecasts and len(forecasts) > 0:
             steps = len(forecasts)
-            forecast_times = [df.index[-1] + pd.Timedelta(seconds=(i+1)*0.30) for i in range(steps)] # Use 0.30-second interval
+            forecast_times = [df.index[-1] + pd.Timedelta(seconds=(i+1)*interval_seconds) for i in range(steps)]
 
             style = model_styles.get(model_type, {
                 'color': '#888888',
@@ -902,20 +1062,23 @@ def create_multi_model_comparison_chart(df, asset_display, model_forecasts, minu
                 )
             )
 
-            # Add end point markers for each forecast
+            # Add end point markers for each forecast with price labels
             if steps > 0:
                 fig.add_trace(
                     go.Scatter(
                         x=[forecast_times[-1]],
                         y=[forecasts[-1]],
                         name=f'{model_type} Final',
-                        mode='markers',
+                        mode='markers+text',
                         marker=dict(
                             color=style['color'],
-                            size=10,
+                            size=12,
                             symbol='diamond',
                             line=dict(color='white', width=2)
                         ),
+                        text=[f"${forecasts[-1]:.4f}"],
+                        textposition="middle right",
+                        textfont=dict(size=10, color=style['color'], weight='bold'),
                         showlegend=False
                     )
                 )
@@ -923,15 +1086,15 @@ def create_multi_model_comparison_chart(df, asset_display, model_forecasts, minu
     # Professional layout with enhanced styling
     fig.update_layout(
         title={
-            'text': f'🔬 {asset_display} - Multi-Model {minutes} Minute Forecast (0.30s precision)',
+            'text': f'🔬 {asset_display} - Multi-Model {minutes} Minute Forecast ({interval_seconds}s precision)<br><span style="font-size:12px;color:#888;">Current Time: {time_str}</span>',
             'y':0.95,
             'x':0.5,
             'xanchor': 'center',
             'yanchor': 'top',
             'font': dict(size=20, color='#00ff88', weight='bold')
         },
-        xaxis_title='Time (Real-time with 0.30s intervals)',
-        yaxis_title='Price',
+        xaxis_title='Time (Real-time with precise intervals)',
+        yaxis_title='Price (USD)',
         height=600,
         showlegend=True,
         template='plotly_dark',
@@ -1073,6 +1236,8 @@ def get_fundamentals_data(market_type):
 df_with_indicators = None
 all_signals = {}
 all_forecasts = {}
+interval_seconds = 0.30  # Default interval
+uploaded_df = None
 
 # Set deployment-friendly options (with error handling)
 try:
@@ -1084,40 +1249,126 @@ except Exception:
 
 # Fetch and process data first - with deployment-friendly error handling
 try:
-    with st.spinner("Fetching market data..."):
-        df = fetch_market_data(asset, timeframe)
+    if data_source == "Uploaded File" and uploaded_file is not None:
+        with st.spinner("Processing uploaded file..."):
+            # Read uploaded CSV file with auto-separator detection
+            uploaded_df = pd.read_csv(uploaded_file, sep=None, engine='python')
 
-    if df is not None and not df.empty:
-        st.success(f"✅ Successfully fetched {len(df)} data points for {asset_display}")
-        # Calculate technical indicators
-        df_with_indicators = calculate_indicators(df)
+            # Validate and clean the data - handle common column name variations
+            required_columns = ['Date', 'Open', 'High', 'Low', 'Close']
+            column_mapping = {}
+
+            # Define common variations for each required column
+            column_variations = {
+                'Date': ['date', 'datetime', 'time', 'timestamp'],
+                'Open': ['open'],
+                'High': ['high'],
+                'Low': ['low'],
+                'Close': ['close', 'price', 'last', 'close_price']
+            }
+
+            # Check for required columns with variations (handle BOM and quotes)
+            for req_col in required_columns:
+                found = False
+                variations = [req_col.lower()] + column_variations.get(req_col, [])
+
+                for col in uploaded_df.columns:
+                    # Clean column name: remove BOM, quotes, and extra whitespace
+                    clean_col = col.replace('\ufeff', '').strip('"').strip()
+                    if clean_col.lower() in variations:
+                        column_mapping[col] = req_col  # Map existing column to required name
+                        found = True
+                        break
+
+                if not found:
+                    st.error(f"CSV file must contain a '{req_col}' column or its variations. Found columns: {list(uploaded_df.columns)}")
+                    st.stop()
+
+            # Rename columns to standard format
+            uploaded_df = uploaded_df.rename(columns=column_mapping)
+
+            # Clean numeric data - remove commas and handle K/M suffixes
+            def clean_numeric(value):
+                if isinstance(value, str):
+                    # Remove commas
+                    value = value.replace(',', '')
+                    # Handle K (thousand) and M (million) suffixes
+                    if value.upper().endswith('K'):
+                        return float(value[:-1]) * 1000
+                    elif value.upper().endswith('M'):
+                        return float(value[:-1]) * 1000000
+                    else:
+                        return float(value)
+                return value
+
+            # Apply cleaning to OHLC columns
+            for col in ['Open', 'High', 'Low', 'Close']:
+                if col in uploaded_df.columns:
+                    uploaded_df[col] = uploaded_df[col].apply(clean_numeric)
+
+            # Clean Volume column if it exists
+            if 'Volume' in uploaded_df.columns:
+                uploaded_df['Volume'] = uploaded_df['Volume'].apply(clean_numeric)
+
+            # Convert Date column to datetime index
+            uploaded_df['Date'] = pd.to_datetime(uploaded_df['Date'])
+            uploaded_df = uploaded_df.set_index('Date')
+
+            # Ensure data is sorted by date
+            uploaded_df = uploaded_df.sort_index()
+
+            # Handle Volume column variations
+            volume_variations = ['volume', 'vol', 'vol.', 'volume_', 'vol_']
+            volume_found = False
+            for col in uploaded_df.columns:
+                if col.lower().strip() in volume_variations:
+                    uploaded_df = uploaded_df.rename(columns={col: 'Volume'})
+                    volume_found = True
+                    break
+
+            # Add Volume column if missing
+            if not volume_found and 'Volume' not in uploaded_df.columns:
+                uploaded_df['Volume'] = np.random.randint(1000, 10000, len(uploaded_df))
+
+            df = uploaded_df.copy()
+            st.success(f"✅ Successfully loaded {len(df)} data points from uploaded file")
+            df_with_indicators = calculate_indicators(df)
+
     else:
-        # Try clearing cache and retrying once
-        st.warning("Initial data fetch failed. Retrying...")
-        fetch_market_data.clear()  # Clear cache
-        df = fetch_market_data(asset, timeframe)  # Retry
+        with st.spinner("Fetching market data..."):
+            df = fetch_market_data(asset, timeframe)
 
         if df is not None and not df.empty:
-            st.success(f"✅ Successfully fetched {len(df)} data points for {asset_display} on retry")
+            st.success(f"✅ Successfully fetched {len(df)} data points for {asset_display}")
+            # Calculate technical indicators
             df_with_indicators = calculate_indicators(df)
         else:
-            st.error(f"❌ Unable to fetch market data for {asset_display}. Using demo data.")
-            # Create demo data for deployment
-            import pandas as pd
-            import numpy as np
-            from datetime import datetime, timedelta
+            # Try clearing cache and retrying once
+            st.warning("Initial data fetch failed. Retrying...")
+            fetch_market_data.clear()  # Clear cache
+            df = fetch_market_data(asset, timeframe)  # Retry
 
-            dates = pd.date_range(end=datetime.now(), periods=200, freq='5min')
-            np.random.seed(42)
-            demo_prices = 50000 + np.cumsum(np.random.randn(200) * 100)
-            df = pd.DataFrame({
-                'Open': demo_prices,
-                'High': demo_prices + abs(np.random.randn(200) * 50),
-                'Low': demo_prices - abs(np.random.randn(200) * 50),
-                'Close': demo_prices + np.random.randn(200) * 25,
-                'Volume': np.random.randint(1000, 10000, 200)
-            }, index=dates)
-            df_with_indicators = calculate_indicators(df)
+            if df is not None and not df.empty:
+                st.success(f"✅ Successfully fetched {len(df)} data points for {asset_display} on retry")
+                df_with_indicators = calculate_indicators(df)
+            else:
+                st.error(f"❌ Unable to fetch market data for {asset_display}. Using demo data.")
+                # Create demo data for deployment
+                import pandas as pd
+                import numpy as np
+                from datetime import datetime, timedelta
+
+                dates = pd.date_range(end=datetime.now(), periods=200, freq='5min')
+                np.random.seed(42)
+                demo_prices = 50000 + np.cumsum(np.random.randn(200) * 100)
+                df = pd.DataFrame({
+                    'Open': demo_prices,
+                    'High': demo_prices + abs(np.random.randn(200) * 50),
+                    'Low': demo_prices - abs(np.random.randn(200) * 50),
+                    'Close': demo_prices + np.random.randn(200) * 25,
+                    'Volume': np.random.randint(1000, 10000, 200)
+                }, index=dates)
+                df_with_indicators = calculate_indicators(df)
 
         # Generate signals using different models for comparison
         model_types = ["RL", "LSTM", "AutoML", "ML"]
@@ -1125,6 +1376,7 @@ try:
         all_forecasts = {}
 
         forecast_minutes = forecast_durations[forecast_duration]
+        interval_seconds = 0.30 if forecast_minutes <= 10 else 1.0  # Use 0.3s for short forecasts, 1s for longer ones
 
         for model_type in model_types:
             try:
@@ -1132,7 +1384,7 @@ try:
                 signal_data = model_inference.generate_signal(df_with_indicators, asset)
 
                 # Generate forecast for this model
-                forecast_prices = forecast_next_period(df_with_indicators, forecast_minutes, interval_seconds=0.30)
+                forecast_prices = forecast_next_period(df_with_indicators, forecast_minutes, interval_seconds=interval_seconds)
                 all_signals[model_type] = signal_data
                 all_forecasts[model_type] = forecast_prices
 
@@ -1152,7 +1404,10 @@ except Exception as e:
 col1, col2 = st.columns([3, 1])
 
 with col1:
-    st.subheader(f"📊 {asset_display} - {timeframe} Analysis & Forecasting")
+    if data_source == "Uploaded File" and uploaded_file is not None:
+        st.subheader(f"📊 Uploaded File Analysis - Forecasting")
+    else:
+        st.subheader(f"📊 {asset_display} - {timeframe} Analysis & Forecasting")
 
     if df_with_indicators is not None and not df_with_indicators.empty:
         # Create the candlestick chart
@@ -1164,23 +1419,46 @@ with col1:
         if current_signal:
             display_signal_panel(current_signal, df_with_indicators.iloc[-1], st.session_state.model_type)
 
-        # Add current live price comparison for selected asset
-        if asset in live_prices:
+        # Add current live price comparison for selected asset (only for live market data)
+        if data_source == "Live Market Data" and asset in live_prices:
             current_live_price = live_prices[asset]
             current_historical = df_with_indicators['Close'].iloc[-1]
             price_diff = current_live_price - current_historical
             price_diff_pct = (price_diff / current_historical) * 100 if current_historical != 0 else 0
 
-            st.info(f"📊 **Live Price Update**: {asset_display} is currently ${current_live_price:.4f} "
+            # Get current time for display
+            try:
+                user_timezone = pytz.timezone('Asia/Karachi')
+                current_time = datetime.now(user_timezone)
+                time_display = current_time.strftime('%H:%M:%S %Z')
+            except:
+                current_time = datetime.now()
+                time_display = current_time.strftime('%H:%M:%S UTC')
+
+            st.info(f"📊 **Live Price Update** ({time_display}): {asset_display} is currently ${current_live_price:.4f} "
                    f"({'+' if price_diff >= 0 else ''}{price_diff:.4f} / {price_diff_pct:+.2f}%) "
                    f"from last historical data point")
+        elif data_source == "Uploaded File":
+            st.info("📊 **Uploaded File Analysis**: Using historical data from your uploaded CSV file for forecasting")
 
         # Show multi-model comparison with enhanced precision
-        precision_text = "0.30s precision" if forecast_durations[forecast_duration] <= 60 else "1min precision"
-        st.header(f"Multi-Model {forecast_duration} Forecast ({precision_text})")
+        interval_seconds = 0.30 if forecast_durations[forecast_duration] <= 10 else 1.0
+        precision_text = f"{interval_seconds}s precision" if interval_seconds < 1 else "1min precision"
+
+        # Get current time for header
+        try:
+            user_timezone = pytz.timezone('Asia/Karachi')
+            current_time = datetime.now(user_timezone)
+            time_display = current_time.strftime('%H:%M:%S %Z')
+        except:
+            current_time = datetime.now()
+            time_display = current_time.strftime('%H:%M:%S UTC')
+
+        st.header(f"Multi-Model {forecast_duration} Forecast ({precision_text}) - {time_display}")
 
         comparison_chart = create_multi_model_comparison_chart(
-            df_with_indicators, asset_display, all_forecasts, forecast_durations[forecast_duration]
+            df_with_indicators, asset_display, all_forecasts, forecast_durations[forecast_duration], interval_seconds=interval_seconds,
+            enable_animation=enable_animation, animation_speed=animation_speed
         )
         st.plotly_chart(comparison_chart, use_container_width=True, key="multi_model_forecast_chart")
 
@@ -1208,8 +1486,9 @@ with col1:
                 # Create forecast chart with trading levels
                 forecast_chart = create_forecast_chart(
                     df_with_indicators, asset_display, all_forecasts[model_type],
-                    forecast_durations[forecast_duration], interval_seconds=0.30,
-                    model_type=model_type, signal_data=signal
+                    forecast_durations[forecast_duration], interval_seconds=interval_seconds,
+                    model_type=model_type, signal_data=signal,
+                    enable_animation=enable_animation, animation_speed=animation_speed
                 )
                 st.plotly_chart(forecast_chart, use_container_width=True, key=f"forecast_chart_{model_type}")
 
@@ -1315,14 +1594,31 @@ with col1:
                                 fig_hour.add_hline(y=take_profit, line_dash="dot", line_color="#44ff44",
                                                  line_width=2, opacity=0.7)
 
-                # Add current price marker
+                # Add current price marker with time
                 current_price = df_with_indicators['Close'].iloc[-1]
+                try:
+                    user_timezone = pytz.timezone('Asia/Karachi')
+                    current_time = datetime.now(user_timezone)
+                    time_display = current_time.strftime('%H:%M:%S %Z')
+                except:
+                    current_time = datetime.now()
+                    time_display = current_time.strftime('%H:%M:%S UTC')
+        
                 fig_hour.add_hline(y=current_price, line_dash="solid", line_color="#00ff88", line_width=4,
-                                 annotation_text=f"Current: ${current_price:.4f}", annotation_position="top right")
+                                 annotation_text=f"Current: ${current_price:.4f} at {time_display}", annotation_position="top right")
+
+                # Get current time for 1-hour chart
+                try:
+                    user_timezone = pytz.timezone('Asia/Karachi')
+                    current_time = datetime.now(user_timezone)
+                    time_str = current_time.strftime('%H:%M:%S %Z')
+                except:
+                    current_time = datetime.now()
+                    time_str = current_time.strftime('%H:%M:%S UTC')
 
                 fig_hour.update_layout(
                     title={
-                        'text': f'1-Hour Forecast Overview - {asset_display} (with Trading Levels)',
+                        'text': f'1-Hour Forecast Overview - {asset_display} (with Trading Levels)<br><span style="font-size:12px;color:#888;">Current Time: {time_str}</span>',
                         'y':0.95,
                         'x':0.5,
                         'xanchor': 'center',
@@ -1414,48 +1710,52 @@ with col1:
             metrics_df = pd.DataFrame(metrics_data)
             st.dataframe(metrics_df, use_container_width=True)
 
-        # Live market comparison section
-        st.subheader("Live Market Comparison")
+        # Live market comparison section (only for live market data)
+        if data_source == "Live Market Data":
+            st.subheader("Live Market Comparison")
 
-        # Get current live price for comparison
-        try:
-            live_fetcher = DataFetcher()
-            live_data = live_fetcher.get_ohlcv_data(asset, timeframe, periods=1)  # Get latest data
+            # Get current live price for comparison
+            try:
+                live_fetcher = DataFetcher()
+                live_data = live_fetcher.get_ohlcv_data(asset, timeframe, periods=1)  # Get latest data
 
-            if live_data is not None and not live_data.empty:
-                live_price = live_data['Close'].iloc[-1]
-                current_forecast = all_forecasts.get(st.session_state.model_type, [])
+                if live_data is not None and not live_data.empty:
+                    live_price = live_data['Close'].iloc[-1]
+                    current_forecast = all_forecasts.get(st.session_state.model_type, [])
 
-                if current_forecast:
-                    forecasted_price = current_forecast[-1]
-                    price_diff = forecasted_price - live_price
-                    price_diff_pct = (price_diff / live_price) * 100
+                    if current_forecast:
+                        forecasted_price = current_forecast[-1]
+                        price_diff = forecasted_price - live_price
+                        price_diff_pct = (price_diff / live_price) * 100
 
-                    col1, col2, col3 = st.columns(3)
+                        col1, col2, col3 = st.columns(3)
 
-                    with col1:
-                        st.metric("Live Market Price", f"{live_price:.4f}")
+                        with col1:
+                            st.metric("Live Market Price", f"{live_price:.4f}")
 
-                    with col2:
-                        st.metric(f"{st.session_state.model_type} Forecast", f"{forecasted_price:.4f}")
+                        with col2:
+                            st.metric(f"{st.session_state.model_type} Forecast", f"{forecasted_price:.4f}")
 
-                    with col3:
-                        delta_color = "normal" if abs(price_diff_pct) < 2 else ("inverse" if price_diff_pct > 0 else "normal")
-                        st.metric("Forecast vs Live", f"{price_diff_pct:+.2f}%",
-                                delta=f"{price_diff:+.4f}", delta_color=delta_color)
+                        with col3:
+                            delta_color = "normal" if abs(price_diff_pct) < 2 else ("inverse" if price_diff_pct > 0 else "normal")
+                            st.metric("Forecast vs Live", f"{price_diff_pct:+.2f}%",
+                                    delta=f"{price_diff:+.4f}", delta_color=delta_color)
 
-                    # Update forecast accuracy tracking
-                    forecast_timestamp = datetime.now() - timedelta(minutes=forecast_minutes)
-                    model_inference.update_forecast_accuracy(asset, forecasted_price, live_price, forecast_timestamp)
+                        # Update forecast accuracy tracking
+                        forecast_timestamp = datetime.now() - timedelta(minutes=forecast_minutes)
+                        model_inference.update_forecast_accuracy(asset, forecasted_price, live_price, forecast_timestamp)
 
-                    # Show accuracy trend
-                    accuracy_info = model_inference.get_forecast_accuracy(asset)
-                    st.info(f"Model Accuracy: {accuracy_info['accuracy_score']:.2f} | "
-                           f"Penalty Applied: {accuracy_info['penalty']:.1f}% | "
-                           f"Forecasts Tracked: {accuracy_info['forecast_count']}")
+                        # Show accuracy trend
+                        accuracy_info = model_inference.get_forecast_accuracy(asset)
+                        st.info(f"Model Accuracy: {accuracy_info['accuracy_score']:.2f} | "
+                               f"Penalty Applied: {accuracy_info['penalty']:.1f}% | "
+                               f"Forecasts Tracked: {accuracy_info['forecast_count']}")
 
-        except Exception as e:
-            st.warning(f"Unable to fetch live market data for comparison: {str(e)}")
+            except Exception as e:
+                st.warning(f"Unable to fetch live market data for comparison: {str(e)}")
+        else:
+            st.subheader("📊 Uploaded File Analysis Summary")
+            st.info("Using historical data from your uploaded CSV file. Forecasting is based on the patterns in your data.")
 
     else:
         st.error(f"❌ Unable to fetch market data for {asset_display} ({asset}). Please check the symbol or try again later.")
@@ -1526,8 +1826,8 @@ with col2:
     except Exception as e:
         st.error(f"Error loading fundamentals: {str(e)}")
 
-# Technical indicators panel (only show if we have data)
-if df_with_indicators is not None and not df_with_indicators.empty:
+# Technical indicators panel (only show if we have data and using live market data)
+if df_with_indicators is not None and not df_with_indicators.empty and data_source == "Live Market Data":
     try:
         col1, col2, col3, col4 = st.columns(4)
 
@@ -1557,6 +1857,30 @@ if df_with_indicators is not None and not df_with_indicators.empty:
             st.metric("ATR(14)", f"{atr:.4f}")
     except Exception as e:
         st.error(f"Error displaying technical indicators: {str(e)}")
+elif df_with_indicators is not None and not df_with_indicators.empty and data_source == "Uploaded File":
+    # Show basic statistics for uploaded file
+    try:
+        col1, col2, col3, col4 = st.columns(4)
+
+        latest = df_with_indicators.iloc[-1]
+        start_price = df_with_indicators['Close'].iloc[0]
+        end_price = df_with_indicators['Close'].iloc[-1]
+        total_change = ((end_price - start_price) / start_price) * 100
+
+        with col1:
+            st.metric("Data Points", f"{len(df_with_indicators)}")
+
+        with col2:
+            st.metric("Latest Price", f"{latest.get('Close', 0):.4f}")
+
+        with col3:
+            st.metric("Total Change", f"{total_change:+.2f}%")
+
+        with col4:
+            volatility = df_with_indicators['Close'].pct_change().std() * 100
+            st.metric("Volatility", f"{volatility:.2f}%")
+    except Exception as e:
+        st.error(f"Error displaying file statistics: {str(e)}")
 
 # Footer
 st.markdown("---")

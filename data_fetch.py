@@ -42,11 +42,20 @@ class DataFetcher:
 
             # Calculate period string based on timeframe
             if timeframe in ['5m', '15m', '30m']:
-                period = '7d'  # 7 days for intraday to avoid rate limits
+                period = '5d'  # 5 days for intraday to avoid rate limits and data availability
             elif timeframe == '1h':
                 period = '30d'  # 30 days for hourly
             else:
                 period = '1y'   # 1 year for daily
+
+            # Special handling for gold symbols - use shorter periods due to data availability
+            if symbol in ['IAU', 'GLD', 'GC=F', 'XAUUSD=X', 'GOLD']:
+                if timeframe in ['5m', '15m', '30m']:
+                    period = '60d'  # 60 days for gold intraday data
+                elif timeframe == '1h':
+                    period = '1y'   # 1 year for gold hourly
+                else:
+                    period = '2y'   # 2 years for gold daily
 
             # Enhanced symbol mapping with more alternatives
             alt_symbols = {

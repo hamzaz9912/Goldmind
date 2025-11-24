@@ -1096,6 +1096,7 @@ def create_multi_model_comparison_chart(df, asset_display, model_forecasts, minu
         xaxis_title='Time (Real-time with precise intervals)',
         yaxis_title='Price (USD)',
         height=600,
+        autosize=True,
         showlegend=True,
         template='plotly_dark',
         plot_bgcolor='rgba(0,0,0,0.95)',
@@ -1460,7 +1461,7 @@ with col1:
             df_with_indicators, asset_display, all_forecasts, forecast_durations[forecast_duration], interval_seconds=interval_seconds,
             enable_animation=enable_animation, animation_speed=animation_speed
         )
-        st.plotly_chart(comparison_chart, use_container_width=True, key="multi_model_forecast_chart")
+        st.plotly_chart(comparison_chart, use_container_width=True, config=dict(responsive=True), key="multi_model_forecast_chart")
 
         # Individual model forecast charts with trading levels
         st.subheader("🎯 Individual Model Forecasts with Trading Levels")
@@ -1673,7 +1674,7 @@ with col1:
 
                 if summary_data:
                     summary_df = pd.DataFrame(summary_data)
-                    st.dataframe(summary_df, use_container_width=True, hide_index=True)
+                    st.markdown(summary_df.to_markdown())
 
             except Exception as e:
                 st.warning(f"Unable to generate 1-hour forecast: {str(e)}")
@@ -1708,7 +1709,7 @@ with col1:
 
         if metrics_data:
             metrics_df = pd.DataFrame(metrics_data)
-            st.dataframe(metrics_df, use_container_width=True)
+            st.markdown(metrics_df.to_markdown())
 
         # Live market comparison section (only for live market data)
         if data_source == "Live Market Data":

@@ -290,6 +290,27 @@ with col2:
 # Sidebar configuration
 st.sidebar.header("⚙️ Configuration")
 
+# Timezone selection for real-time adjustment
+timezones = {
+    "Pakistan (PKT)": "Asia/Karachi",
+    "Germany (CET)": "Europe/Berlin",
+    "UK (GMT/BST)": "Europe/London",
+    "USA Eastern (ET)": "US/Eastern",
+    "USA Pacific (PT)": "US/Pacific",
+    "Japan (JST)": "Asia/Tokyo",
+    "Australia (AEST)": "Australia/Sydney",
+    "UTC": "UTC"
+}
+
+selected_timezone = st.sidebar.selectbox(
+    "Timezone",
+    list(timezones.keys()),
+    index=0,  # Default to Pakistan
+    key="timezone"
+)
+
+user_timezone = timezones[selected_timezone]
+
 # Market type selection
 market_type = st.sidebar.selectbox(
     "Market Type",
@@ -877,8 +898,8 @@ def create_forecast_chart(df, asset_display, forecasts, minutes, interval_second
     # Get current time in user's timezone
     try:
         # Try to get user's timezone from environment or use default
-        user_timezone = pytz.timezone('Asia/Karachi')  # Default timezone
-        current_time = datetime.now(user_timezone)
+        tz = pytz.timezone(user_timezone)
+        current_time = datetime.now(tz)
         time_str = current_time.strftime('%H:%M:%S %Z')
     except:
         # Fallback to UTC if timezone fails
@@ -967,8 +988,8 @@ def create_multi_model_comparison_chart(df, asset_display, model_forecasts, minu
     # Get current time in user's timezone
     try:
         # Try to get user's timezone from environment or use default
-        user_timezone = pytz.timezone('Asia/Karachi')  # Default timezone
-        current_time = datetime.now(user_timezone)
+        tz = pytz.timezone(user_timezone)
+        current_time = datetime.now(tz)
         time_str = current_time.strftime('%H:%M:%S %Z')
     except:
         # Fallback to UTC if timezone fails
@@ -1429,8 +1450,8 @@ with col1:
 
             # Get current time for display
             try:
-                user_timezone = pytz.timezone('Asia/Karachi')
-                current_time = datetime.now(user_timezone)
+                tz = pytz.timezone(user_timezone)
+                current_time = datetime.now(tz)
                 time_display = current_time.strftime('%H:%M:%S %Z')
             except:
                 current_time = datetime.now()
@@ -1448,8 +1469,8 @@ with col1:
 
         # Get current time for header
         try:
-            user_timezone = pytz.timezone('Asia/Karachi')
-            current_time = datetime.now(user_timezone)
+            tz = pytz.timezone(user_timezone)
+            current_time = datetime.now(tz)
             time_display = current_time.strftime('%H:%M:%S %Z')
         except:
             current_time = datetime.now()
@@ -1598,8 +1619,8 @@ with col1:
                 # Add current price marker with time
                 current_price = df_with_indicators['Close'].iloc[-1]
                 try:
-                    user_timezone = pytz.timezone('Asia/Karachi')
-                    current_time = datetime.now(user_timezone)
+                    tz = pytz.timezone(user_timezone)
+                    current_time = datetime.now(tz)
                     time_display = current_time.strftime('%H:%M:%S %Z')
                 except:
                     current_time = datetime.now()
@@ -1610,8 +1631,8 @@ with col1:
 
                 # Get current time for 1-hour chart
                 try:
-                    user_timezone = pytz.timezone('Asia/Karachi')
-                    current_time = datetime.now(user_timezone)
+                    tz = pytz.timezone(user_timezone)
+                    current_time = datetime.now(tz)
                     time_str = current_time.strftime('%H:%M:%S %Z')
                 except:
                     current_time = datetime.now()
